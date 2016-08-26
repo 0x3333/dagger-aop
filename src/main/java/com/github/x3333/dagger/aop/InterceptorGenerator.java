@@ -11,12 +11,12 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.interceptor;
+package com.github.x3333.dagger.aop;
 
-import static com.github.x3333.dagger.interceptor.Util.cloneConstructor;
-import static com.github.x3333.dagger.interceptor.Util.cloneMethod;
-import static com.github.x3333.dagger.interceptor.Util.simpleNames;
-import static com.github.x3333.dagger.interceptor.Util.toSpec;
+import static com.github.x3333.dagger.aop.Util.cloneConstructor;
+import static com.github.x3333.dagger.aop.Util.cloneMethod;
+import static com.github.x3333.dagger.aop.Util.simpleNames;
+import static com.github.x3333.dagger.aop.Util.toSpec;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;

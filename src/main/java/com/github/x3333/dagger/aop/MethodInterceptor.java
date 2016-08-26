@@ -11,7 +11,7 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.interceptor;
+package com.github.x3333.dagger.aop;
 
 /**
  * Basic interface for a Method Interceptor.

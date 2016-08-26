@@ -11,9 +11,9 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.interceptor;
+package com.github.x3333.dagger.aop;
 
-import static com.github.x3333.dagger.interceptor.Util.scanForElementKind;
+import static com.github.x3333.dagger.aop.Util.scanForElementKind;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -94,8 +94,8 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
         }
         final ExecutableElement methodElement = MoreElements.asExecutable(element);
 
-        if (MoreElements.isAnnotationPresent(
-            MoreElements.asType(Util.scanForElementKind(ElementKind.CLASS, methodElement)), Generated.class)) {
+        final TypeElement classElement = MoreElements.asType(scanForElementKind(ElementKind.CLASS, methodElement));
+        if (MoreElements.isAnnotationPresent(classElement, Generated.class)) {
           printWarning(element, "Ignoring element, Generated code!");
           continue;
         }

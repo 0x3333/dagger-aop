@@ -11,7 +11,7 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.interceptor;
+package com.github.x3333.dagger.aop;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
