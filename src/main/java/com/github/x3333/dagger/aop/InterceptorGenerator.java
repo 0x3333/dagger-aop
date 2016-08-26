@@ -214,12 +214,12 @@ class InterceptorGenerator {
           : CodeBlock.builder().add(//
               Strings.repeat(", $T.class", parametersTypes.size()), parametersTypes.toArray()).build();
       staticAnnotationsCacheCode//
-          .addStatement("$L = $L.class.getSuperclass().getMethod($S$L)", //
+          .addStatement("$L = $L.class.getSuperclass().getDeclaredMethod($S$L)", //
               methodCacheFieldName, //
               interceptorName, //
               methodName, parameters)//
 
-          .addStatement("$L = $T.asList($L.getAnnotations());", //
+          .addStatement("$L = $T.asList($L.getAnnotations())", //
               annotationsFieldName, //
               Arrays.class, //
               methodCacheFieldName);
