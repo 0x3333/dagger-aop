@@ -24,8 +24,6 @@ import com.google.auto.service.AutoService;
 /**
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
-// TODO: We could generate a Dagger Module for all classes that had methods intercepted.
-// This way user would be alerted if they binded twice for the same class
 @AutoService(Processor.class)
 public class InterceptorProcessor extends BasicAnnotationProcessor {
 

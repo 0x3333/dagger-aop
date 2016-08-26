@@ -126,6 +126,8 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     // Process binds by grouped Class
     classes.keySet().forEach(k -> processBind(k, classes.get(k)));
 
+    // TODO: We should create a Dagger Module with classes binded to their intercepted classes.
+
     // PostProcess to Handlers
     for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : services.entrySet()) {
       final Multimap<TypeElement, MethodBind> bindings =
