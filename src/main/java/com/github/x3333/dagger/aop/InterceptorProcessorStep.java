@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -41,6 +42,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
@@ -70,7 +72,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
         .forEach(service -> builder.put(service.annotation(), service));
 
     services = builder.build();
-    generator = new InterceptorGenerator(processingEnv, services);
+    generator = new InterceptorGenerator(services);
   }
 
   //
@@ -124,13 +126,19 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     // Process binds by grouped Class
     classes.keySet().forEach(k -> processBind(k, classes.get(k)));
 
+    // PostProcess to Handlers
+    for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : services.entrySet()) {
+      final Multimap<TypeElement, MethodBind> bindings =
+          Multimaps.filterEntries(classes, entry -> entry.getValue().getAnnotations().contains(serviceEntry.getKey()));
+      serviceEntry.getValue().postProcess(processingEnv, bindings);
+    }
+
     return Collections.emptySet();
   }
 
   //
 
   private void processBind(final TypeElement superClassElement, final Collection<MethodBind> methodBinds) {
-
     final String packageName = MoreElements//
         .asPackage(scanForElementKind(ElementKind.PACKAGE, superClassElement)).getQualifiedName().toString();
 
@@ -140,11 +148,12 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
       JavaFile.builder(packageName, interceptorClass).build().writeTo(processingEnv.getFiler());
     } catch (final IOException ioe) {
       final StringWriter sw = new StringWriter();
-      final PrintWriter pw = new PrintWriter(sw);
-      pw.println("Error generating source file for type " + interceptorClass.name);
-      ioe.printStackTrace(pw);
-      pw.close();
-      processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
+      try (final PrintWriter pw = new PrintWriter(sw);) {
+        pw.println("Error generating source file for type " + interceptorClass.name);
+        ioe.printStackTrace(pw);
+        pw.close();
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
+      }
     }
   }
 

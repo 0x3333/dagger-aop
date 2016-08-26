@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableList;
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
 @AutoValue
-abstract class MethodBind {
+public abstract class MethodBind {
 
   private TypeElement classElement;
 
