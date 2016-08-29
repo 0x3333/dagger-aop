@@ -307,7 +307,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
       final ClassName sourceClassName = ClassName.get(sourceElement);
       final ClassName superClassName = ClassName.get(sourceClassName.packageName(), entry.getKey().name);
 
-      final MethodSpec method = MethodSpec.methodBuilder("providesJpaService")//
+      final MethodSpec method = MethodSpec.methodBuilder("provides" + sourceElement.getSimpleName())//
           .addModifiers(ABSTRACT)//
           .addAnnotation(Binds.class)//
           .returns(sourceClassName)//
