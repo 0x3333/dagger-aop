@@ -46,12 +46,14 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
 
 import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.common.MoreElements;
+import com.google.auto.common.Visibility;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
@@ -290,24 +292,53 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
         .addJavadoc("This class is the default Dagger module for Intercepted Methods.\n")//
         .addAnnotation(Module.class);
 
+    int count = 0;
     for (final Entry<TypeSpec, TypeElement> entry : generatedTypes.entrySet()) {
+      final TypeElement sourceElement = entry.getValue();
 
-      final ClassName sourceClass = ClassName.get(entry.getValue());
-      final ClassName superClass = ClassName.get(sourceClass.packageName(), entry.getKey().name);
+      final PackageElement pkg = processingEnv.getElementUtils().getPackageElement(PACKAGE);
+      if (!isVisibleFrom(sourceElement, pkg)) {
+        printWarning(sourceElement,
+            "Could not create InterceptorModule bind, source class is not visible outside its package!");
+        continue;
+      }
+      count++;
+
+      final ClassName sourceClassName = ClassName.get(sourceElement);
+      final ClassName superClassName = ClassName.get(sourceClassName.packageName(), entry.getKey().name);
 
       final MethodSpec method = MethodSpec.methodBuilder("providesJpaService")//
           .addModifiers(ABSTRACT)//
           .addAnnotation(Binds.class)//
-          .returns(sourceClass)//
-          .addParameter(superClass, "impl", FINAL)//
+          .returns(sourceClassName)//
+          .addParameter(superClassName, "impl", FINAL)//
           .build();
       classBuilder.addMethod(method);
     }
 
-    SourceGenerator.writeClass(//
-        processingEnv, //
-        PACKAGE, //
-        classBuilder.build());
+    if (count > 0) {
+      SourceGenerator.writeClass(//
+          processingEnv, //
+          PACKAGE, //
+          classBuilder.build());
+    }
+  }
+
+  /*
+   * Copyright (C) 2014 Thomas Broyer - bullet - https://github.com/tbroyer/bullet
+   */
+  private boolean isVisibleFrom(final Element target, final PackageElement from) {
+    switch (Visibility.effectiveVisibilityOfElement(target)) {
+      case PUBLIC:
+        return true;
+      case PROTECTED:
+      case DEFAULT:
+        return MoreElements.getPackage(target).equals(from);
+      case PRIVATE:
+        return false;
+      default:
+        throw new AssertionError();
+    }
   }
 
   /**
