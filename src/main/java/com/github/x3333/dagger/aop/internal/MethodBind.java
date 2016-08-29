@@ -11,7 +11,7 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.aop;
+package com.github.x3333.dagger.aop.internal;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableList;
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
 @AutoValue
-public abstract class MethodBind {
+abstract class MethodBind {
 
   private TypeElement classElement;
 

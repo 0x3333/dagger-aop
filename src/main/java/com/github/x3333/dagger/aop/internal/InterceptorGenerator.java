@@ -11,18 +11,22 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.aop;
+package com.github.x3333.dagger.aop.internal;
 
-import static com.github.x3333.dagger.aop.Util.cloneConstructor;
-import static com.github.x3333.dagger.aop.Util.cloneMethod;
-import static com.github.x3333.dagger.aop.Util.simpleNames;
-import static com.github.x3333.dagger.aop.Util.toSpec;
+import static com.github.x3333.dagger.aop.internal.Util.cloneConstructor;
+import static com.github.x3333.dagger.aop.internal.Util.cloneMethod;
+import static com.github.x3333.dagger.aop.internal.Util.simpleNames;
+import static com.github.x3333.dagger.aop.internal.Util.toSpec;
 import static javax.lang.model.element.ElementKind.CONSTRUCTOR;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 import static javax.lang.model.type.TypeKind.VOID;
+
+import com.github.x3333.dagger.aop.AbstractMethodInvocation;
+import com.github.x3333.dagger.aop.InterceptorHandler;
+import com.github.x3333.dagger.aop.MethodInterceptor;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -31,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import javax.annotation.Generated;
 import javax.inject.Inject;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -44,7 +47,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
@@ -62,10 +64,6 @@ class InterceptorGenerator {
   static final String METHOD_CACHE_SUFIX = "Cache$";
   static final String ANNOTATIONS_CACHE_SUFIX = "AnnotationsCache$";
   static final String INTERCEPTOR_CLASS_PREFIX = "Interceptor_";
-
-  static final AnnotationSpec GENERATOR_ANNOTATION = AnnotationSpec.builder(Generated.class)//
-      .addMember("value", "$S", InterceptorProcessor.class.getCanonicalName())//
-      .addMember("comments", "$S", "https://github.com/0x3333/dagger-aop").build();
 
   private final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services;
 
@@ -89,7 +87,7 @@ class InterceptorGenerator {
 
         .superclass(ClassName.get(superClassElement)) //
 
-        .addAnnotation(GENERATOR_ANNOTATION) //
+        .addAnnotation(InterceptorProcessor.generatedAnnotation(InterceptorProcessor.class)) //
         .addAnnotations(toSpec(superClassElement.getAnnotationMirrors())) //
 
         .addModifiers(PUBLIC, FINAL);
@@ -133,7 +131,8 @@ class InterceptorGenerator {
       final String joinedParameterNames = Joiner.on(", ").join(parameterNames);
       // proceedMethod
       final TypeName returnTypeName = TypeName.get(returnType);
-      final String proceedMethodName = hasReturnValue ? "returnProceed" : "noReturnProceed";
+      final String proceedMethodModifier = hasReturnValue ? "public" : "protected";
+      final String proceedMethodName = hasReturnValue ? "proceed" : "noReturnProceed";
       // interceptorInvoke
       final String interceptorInvokePrefix = hasReturnValue ? "return " : "";
       final String annotationsFieldName = methodName + ANNOTATIONS_CACHE_SUFIX;
@@ -167,7 +166,8 @@ class InterceptorGenerator {
           interceptorsCreated.add(annotation);
         }
 
-        final CodeBlock invokeMethod = createInvokeMethod(returnTypeName, proceedMethodName, lastInvoke);
+        final CodeBlock invokeMethod =
+            createInvokeMethod(proceedMethodModifier, returnTypeName, proceedMethodName, lastInvoke);
         lastInvoke = createInterceptorInvoke(interceptorInvokePrefix, interceptorFieldName, interceptorName,
             methodCacheFieldName, annotationsFieldName, invokeMethod);
       }
@@ -185,6 +185,7 @@ class InterceptorGenerator {
           .add("}\n");
 
       final MethodSpec method = cloneMethod(MoreElements.asExecutable(methodElement))//
+          .addAnnotation(Override.class)//
           .addCode(tryBlock.build())//
           .build();
 
@@ -244,13 +245,15 @@ class InterceptorGenerator {
   }
 
   private CodeBlock createInvokeMethod(//
+      final String proceedMethodModifier, //
       final TypeName returnTypeName, //
       final String proceedMethodName, //
       final CodeBlock proceedCall) {
 
     return CodeBlock.builder()//
         .add("@$T\n", Override.class)//
-        .add("protected $T $L() throws $T {\n", returnTypeName, proceedMethodName, Throwable.class).indent()//
+        .add("$L $T $L() throws $T {\n", proceedMethodModifier, returnTypeName, proceedMethodName, Throwable.class)
+        .indent()//
         .add(proceedCall).unindent()//
         .add("}\n")//
         .build();

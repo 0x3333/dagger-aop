@@ -70,7 +70,7 @@ public interface MethodInvocation {
    */
   @SuppressWarnings("unchecked")
   default <A extends Annotation> A annotation(final Class<A> annotationClass) {
-    return (A) Iterables.find(getAnnotations(), a -> a.getClass().equals(annotationClass), null);
+    return (A) Iterables.find(getAnnotations(), a -> a.annotationType().equals(annotationClass), null);
   }
 
 }

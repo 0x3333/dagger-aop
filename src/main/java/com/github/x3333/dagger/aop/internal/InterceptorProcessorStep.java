@@ -11,14 +11,21 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.aop;
+package com.github.x3333.dagger.aop.internal;
 
-import static com.github.x3333.dagger.aop.Util.scanForElementKind;
+import static com.github.x3333.dagger.aop.internal.Util.scanForElementKind;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import com.github.x3333.dagger.aop.InterceptorHandler;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,35 +91,41 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
   @Override
   public Set<Element> process(final SetMultimap<Class<? extends Annotation>, Element> elementsByAnnotation) {
+    if (services.size() == 0) {
+      printWarning(null,
+          "No InterceptorHandler registered. Did you forgot to add some interceptor in your dependencies?");
+    }
     final Map<ExecutableElement, MethodBind.Builder> builders = new HashMap<>();
     for (final Class<? extends Annotation> annotation : services.keySet()) {
       final InterceptorHandler service = services.get(annotation);
 
-      // Group by Method
-      for (final Element element : elementsByAnnotation.get(annotation)) {
-        if (element.getKind() != ElementKind.METHOD) {
-          printWarning(element, "Ignoring element, not a Method!");
-          continue;
-        }
-        final ExecutableElement methodElement = MoreElements.asExecutable(element);
+      if (validateAnnotation(service, annotation)) {
+        // Group by Method
+        for (final Element element : elementsByAnnotation.get(annotation)) {
+          if (element.getKind() != ElementKind.METHOD) {
+            printWarning(element, "Ignoring element, not a Method!");
+            continue;
+          }
+          final ExecutableElement methodElement = MoreElements.asExecutable(element);
 
-        final TypeElement classElement = MoreElements.asType(scanForElementKind(ElementKind.CLASS, methodElement));
-        if (MoreElements.isAnnotationPresent(classElement, Generated.class)) {
-          printWarning(element, "Ignoring element, Generated code!");
-          continue;
-        }
+          final TypeElement classElement = MoreElements.asType(scanForElementKind(ElementKind.CLASS, methodElement));
+          if (MoreElements.isAnnotationPresent(classElement, Generated.class)) {
+            printWarning(element, "Ignoring element, Generated code!");
+            continue;
+          }
 
-        final String errorMessage = service.validateMethod(methodElement);
-        if (errorMessage != null) {
-          printError(methodElement, errorMessage);
-          continue;
-        }
+          final String errorMessage = service.validateMethod(methodElement);
+          if (errorMessage != null) {
+            printError(methodElement, errorMessage);
+            continue;
+          }
 
-        builders
-            .computeIfAbsent(//
-                methodElement, //
-                key -> MethodBind.builder().setMethodElement(methodElement))//
-            .annotationsBuilder().add(annotation);
+          builders
+              .computeIfAbsent(//
+                  methodElement, //
+                  key -> MethodBind.builder().setMethodElement(methodElement))//
+              .annotationsBuilder().add(annotation);
+        }
       }
     }
 
@@ -132,7 +145,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : services.entrySet()) {
       final Multimap<TypeElement, MethodBind> bindings =
           Multimaps.filterEntries(classes, entry -> entry.getValue().getAnnotations().contains(serviceEntry.getKey()));
-      serviceEntry.getValue().postProcess(processingEnv, bindings);
+      serviceEntry.getValue().postProcess(processingEnv, bindings.keySet());
     }
 
     return Collections.emptySet();
@@ -140,9 +153,41 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
   //
 
+  /**
+   * Validate a {@link InterceptorHandler} annotation.
+   * 
+   * <p>
+   * {@link InterceptorHandler InterceptorHandlers} annotations must have {@link Retention} set to {@link RetentionPolicy
+   * RetentionPolicy.RUNTIME} and {@link Target} set to {@link ElementType ElementType.METHOD}.
+   * 
+   * @param service
+   * 
+   * @param annotation Annotation to be validated.
+   * @return true if valid, false otherwise.
+   */
+  private boolean validateAnnotation(final InterceptorHandler service, final Class<? extends Annotation> annotation) {
+    final Retention retention = annotation.getAnnotation(Retention.class);
+    if (retention != null && retention.value() != RUNTIME) {
+      printWarning(null, "InterceptorHandler annotation must have Retention set to RUNTIME. Ignoring " //
+          + service.getClass().toString());
+      return false;
+    }
+    final Target target = annotation.getAnnotation(Target.class);
+    if (target != null && target.value().length != 1 || target.value()[0] != ElementType.METHOD) {
+      printWarning(null, "InterceptorHandler annotation must have Target set to METHOD. Ignoring " //
+          + service.getClass().toString());
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Process {@link MethodBind MethodBinds} using the {@link InterceptorGenerator}.
+   */
   private void processBind(final TypeElement superClassElement, final Collection<MethodBind> methodBinds) {
-    final String packageName = MoreElements//
-        .asPackage(scanForElementKind(ElementKind.PACKAGE, superClassElement)).getQualifiedName().toString();
+    final Element packageElement = scanForElementKind(ElementKind.PACKAGE, superClassElement);
+    final String packageName = MoreElements.asPackage(packageElement).getQualifiedName().toString();
 
     final TypeSpec interceptorClass = generator.generateInterceptor(superClassElement, methodBinds);
 

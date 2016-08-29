@@ -11,21 +11,31 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.aop;
+package com.github.x3333.dagger.aop.internal;
 
 import java.util.Collections;
 
+import javax.annotation.Generated;
 import javax.annotation.processing.Processor;
 import javax.lang.model.SourceVersion;
 
 import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.service.AutoService;
+import com.squareup.javapoet.AnnotationSpec;
 
 /**
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
 @AutoService(Processor.class)
 public class InterceptorProcessor extends BasicAnnotationProcessor {
+
+  public static AnnotationSpec generatedAnnotation(final Class<?> generatorClass) {
+    return AnnotationSpec.builder(Generated.class)//
+        .addMember("value", "$S", generatorClass.getCanonicalName())//
+        .addMember("comments", "$S", "https://github.com/0x3333/dagger-aop").build();
+  }
+
+  //
 
   @Override
   public SourceVersion getSupportedSourceVersion() {

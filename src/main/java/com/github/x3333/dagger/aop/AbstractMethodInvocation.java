@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
  * Abstract implementation for method invocations.
  * 
  * <p>
- * implementers must implement at least one of these:
+ * Implementers must implement at least one of these:
  * <ul>
  * <li>{@link #proceed()} for methods <em>with</em> a return value</li>
  * <li>{@link #noReturnProceed()} for methods <em>without</em> a return value</li>
@@ -58,10 +58,6 @@ public abstract class AbstractMethodInvocation implements MethodInvocation {
 
   @Override
   public Object proceed() throws Throwable {
-    return returnProceed();
-  }
-
-  protected Object returnProceed() throws Throwable {
     noReturnProceed();
     return null;
   }

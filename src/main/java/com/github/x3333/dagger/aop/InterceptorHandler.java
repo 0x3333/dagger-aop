@@ -14,12 +14,11 @@
 package com.github.x3333.dagger.aop;
 
 import java.lang.annotation.Annotation;
+import java.util.Set;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-
-import com.google.common.collect.Multimap;
 
 /**
  * Base interface for {@link MethodInterceptor} handlers.
@@ -63,10 +62,8 @@ public interface InterceptorHandler {
    * Called after the Generator has processed all annotated classes.
    * 
    * @param processingEnv {@link ProcessingEnvironment} associated with this generation.
-   * @param bindings All bindings processed that belongs to this Handler.
+   * @param processedClasses All processed classes that belongs to this Handler.
    */
-  default void postProcess(//
-      final ProcessingEnvironment processingEnv, //
-      final Multimap<TypeElement, MethodBind> bindings) {}
+  default void postProcess(final ProcessingEnvironment processingEnv, final Set<TypeElement> processedClasses) {}
 
 }
