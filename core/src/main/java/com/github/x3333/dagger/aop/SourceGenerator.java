@@ -11,34 +11,37 @@
  * and limitations under the License.
  */
 
-package com.github.x3333.dagger.aop.internal;
+package com.github.x3333.dagger.aop;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Collections;
 
 import javax.annotation.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.Processor;
-import javax.lang.model.SourceVersion;
 import javax.tools.Diagnostic;
 
-import com.google.auto.common.BasicAnnotationProcessor;
-import com.google.auto.service.AutoService;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 
 /**
+ * Helper utilities to Source Generator.
+ * 
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
-@AutoService(Processor.class)
-public class InterceptorProcessor extends BasicAnnotationProcessor {
+public final class SourceGenerator {
 
-  public static AnnotationSpec generatedAnnotation(final Class<?> generatorClass) {
+  private SourceGenerator() {}
+
+  /**
+   * Generate the {@link Generated} annotation.
+   * 
+   * @return Generated annotation populated.
+   */
+  public static AnnotationSpec generatedAnnotation(final Class<?> generator) {
     return AnnotationSpec.builder(Generated.class)//
-        .addMember("value", "$S", generatorClass.getCanonicalName())//
+        .addMember("value", "$S", generator.getCanonicalName())//
         .addMember("comments", "$S", "https://github.com/0x3333/dagger-aop").build();
   }
 
@@ -62,18 +65,6 @@ public class InterceptorProcessor extends BasicAnnotationProcessor {
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
       }
     }
-  }
-
-  //
-
-  @Override
-  public SourceVersion getSupportedSourceVersion() {
-    return SourceVersion.latestSupported();
-  }
-
-  @Override
-  protected Iterable<? extends ProcessingStep> initSteps() {
-    return Collections.singleton(new InterceptorProcessorStep(processingEnv));
   }
 
 }

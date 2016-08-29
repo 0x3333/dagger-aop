@@ -15,8 +15,7 @@ package com.github.x3333.dagger.aop;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
-import com.google.common.collect.Iterables;
+import java.util.List;
 
 /**
  * Represents a Method Invocation.
@@ -47,7 +46,7 @@ public interface MethodInvocation {
    * 
    * @return Method's annotations.
    */
-  Iterable<Annotation> getAnnotations();
+  List<Annotation> getAnnotations();
 
   /**
    * Called by the MethodInterceptor when the original method need to proceed.
@@ -66,11 +65,11 @@ public interface MethodInvocation {
    * 
    * @param <A> Type of the Annotation to be returned.
    * @param annotationClass Class of the Annotation to be returned.
-   * @return Annotation instance if present, or null otherwise.
+   * @return Optional Annotation instance.
    */
   @SuppressWarnings("unchecked")
   default <A extends Annotation> A annotation(final Class<A> annotationClass) {
-    return (A) Iterables.find(getAnnotations(), a -> a.annotationType().equals(annotationClass), null);
+    return (A) getAnnotations().stream().filter(a -> a.annotationType().equals(annotationClass)).findFirst().get();
   }
 
 }

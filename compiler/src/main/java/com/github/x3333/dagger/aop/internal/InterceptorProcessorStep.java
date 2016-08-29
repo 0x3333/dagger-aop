@@ -21,6 +21,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 
 import com.github.x3333.dagger.aop.InterceptorHandler;
 import com.github.x3333.dagger.aop.MethodInterceptor;
+import com.github.x3333.dagger.aop.SourceGenerator;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -303,7 +304,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
       classBuilder.addMethod(method);
     }
 
-    InterceptorProcessor.writeClass(//
+    SourceGenerator.writeClass(//
         processingEnv, //
         PACKAGE, //
         classBuilder.build());

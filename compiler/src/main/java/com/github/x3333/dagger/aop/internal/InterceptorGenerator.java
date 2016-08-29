@@ -27,6 +27,7 @@ import static javax.lang.model.type.TypeKind.VOID;
 import com.github.x3333.dagger.aop.AbstractMethodInvocation;
 import com.github.x3333.dagger.aop.InterceptorHandler;
 import com.github.x3333.dagger.aop.MethodInterceptor;
+import com.github.x3333.dagger.aop.SourceGenerator;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -61,15 +62,21 @@ import com.squareup.javapoet.TypeSpec;
  */
 class InterceptorGenerator {
 
-  static final String METHOD_CACHE_SUFIX = "Cache$";
-  static final String ANNOTATIONS_CACHE_SUFIX = "AnnotationsCache$";
-  static final String INTERCEPTOR_CLASS_PREFIX = "Interceptor_";
+  private static final String METHOD_CACHE_SUFIX = "Cache$";
+  private static final String ANNOTATIONS_CACHE_SUFIX = "AnnotationsCache$";
+  private static final String INTERCEPTOR_CLASS_PREFIX = "Interceptor_";
+
+  //
 
   private final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services;
+
+  //
 
   public InterceptorGenerator(final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services) {
     this.services = services;
   }
+
+  //
 
   /**
    * Generate the Interceptor for the {@link TypeElement superClassElement} using {@link MethodBind methodBinds}.
@@ -87,7 +94,7 @@ class InterceptorGenerator {
 
         .superclass(ClassName.get(superClassElement)) //
 
-        .addAnnotation(InterceptorProcessor.generatedAnnotation(InterceptorProcessor.class)) //
+        .addAnnotation(SourceGenerator.generatedAnnotation(InterceptorProcessor.class)) //
         .addAnnotations(toSpec(superClassElement.getAnnotationMirrors())) //
 
         .addModifiers(PUBLIC, FINAL);

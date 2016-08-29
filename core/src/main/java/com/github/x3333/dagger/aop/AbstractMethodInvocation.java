@@ -15,6 +15,7 @@ package com.github.x3333.dagger.aop;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * Abstract implementation for method invocations.
@@ -33,9 +34,9 @@ public abstract class AbstractMethodInvocation implements MethodInvocation {
 
   private final Object instance;
   private final Method method;
-  private final Iterable<Annotation> annotations;
+  private final List<Annotation> annotations;
 
-  public AbstractMethodInvocation(final Object instance, final Method method, final Iterable<Annotation> annotations) {
+  public AbstractMethodInvocation(final Object instance, final Method method, final List<Annotation> annotations) {
     this.instance = instance;
     this.method = method;
     this.annotations = annotations;
@@ -52,7 +53,7 @@ public abstract class AbstractMethodInvocation implements MethodInvocation {
   }
 
   @Override
-  public Iterable<Annotation> getAnnotations() {
+  public List<Annotation> getAnnotations() {
     return annotations;
   }
 
