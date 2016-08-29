@@ -13,15 +13,22 @@
 
 package com.github.x3333.dagger.aop.internal;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collections;
 
 import javax.annotation.Generated;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.lang.model.SourceVersion;
+import javax.tools.Diagnostic;
 
 import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.TypeSpec;
 
 /**
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
@@ -33,6 +40,28 @@ public class InterceptorProcessor extends BasicAnnotationProcessor {
     return AnnotationSpec.builder(Generated.class)//
         .addMember("value", "$S", generatorClass.getCanonicalName())//
         .addMember("comments", "$S", "https://github.com/0x3333/dagger-aop").build();
+  }
+
+  /**
+   * Write a Class to the Processing Environment Filer.
+   * 
+   * @param processingEnv ProcessingEnvironment to use.
+   * @param packageName Package name of the class to write.
+   * @param classSpec Class to be written.
+   */
+  public static void writeClass(final ProcessingEnvironment processingEnv, final String packageName,
+      final TypeSpec classSpec) {
+    try {
+      JavaFile.builder(packageName, classSpec).build().writeTo(processingEnv.getFiler());
+    } catch (final IOException ioe) {
+      final StringWriter sw = new StringWriter();
+      try (final PrintWriter pw = new PrintWriter(sw);) {
+        pw.println("Error generating source file for type " + classSpec.name);
+        ioe.printStackTrace(pw);
+        pw.close();
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
+      }
+    }
   }
 
   //

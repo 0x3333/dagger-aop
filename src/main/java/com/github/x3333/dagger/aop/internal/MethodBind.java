@@ -14,9 +14,11 @@
 package com.github.x3333.dagger.aop.internal;
 
 import static com.google.common.base.Preconditions.checkState;
+import static javax.lang.model.element.ElementKind.METHOD;
 
 import java.lang.annotation.Annotation;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -43,6 +45,24 @@ abstract class MethodBind {
   abstract ExecutableElement getMethodElement();
 
   abstract ImmutableList<Class<? extends Annotation>> getAnnotations();
+
+  /**
+   * Find the order the method is declared in the class. Makes generated methods in the same order.
+   * 
+   * @return Method order in the declaring class.
+   */
+  int getOrder() {
+    int i = 0;
+    for (final Element enclosedElement : getClassElement().getEnclosedElements()) {
+      if (enclosedElement.getKind() == METHOD) {
+        if (enclosedElement.equals(getMethodElement())) {
+          return i;
+        }
+        i++;
+      }
+    }
+    throw new IllegalArgumentException();
+  }
 
   static Builder builder() {
     return new AutoValue_MethodBind.Builder();

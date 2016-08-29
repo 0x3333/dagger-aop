@@ -15,8 +15,12 @@ package com.github.x3333.dagger.aop.internal;
 
 import static com.github.x3333.dagger.aop.internal.Util.scanForElementKind;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.FINAL;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 import com.github.x3333.dagger.aop.InterceptorHandler;
+import com.github.x3333.dagger.aop.MethodInterceptor;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -39,25 +43,34 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
 
 import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.common.MoreElements;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.TreeMultimap;
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+
+import dagger.Binds;
+import dagger.Module;
 
 /**
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
 class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingStep {
+
+  private static final String PACKAGE = MethodInterceptor.class.getPackage().getName();
 
   private final ProcessingEnvironment processingEnv;
   private final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services;
@@ -92,54 +105,61 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
   @Override
   public Set<Element> process(final SetMultimap<Class<? extends Annotation>, Element> elementsByAnnotation) {
     if (services.size() == 0) {
-      printWarning(null,
+      printError(null,
           "No InterceptorHandler registered. Did you forgot to add some interceptor in your dependencies?");
     }
     final Map<ExecutableElement, MethodBind.Builder> builders = new HashMap<>();
     for (final Class<? extends Annotation> annotation : services.keySet()) {
       final InterceptorHandler service = services.get(annotation);
 
-      if (validateAnnotation(service, annotation)) {
-        // Group by Method
-        for (final Element element : elementsByAnnotation.get(annotation)) {
-          if (element.getKind() != ElementKind.METHOD) {
-            printWarning(element, "Ignoring element, not a Method!");
-            continue;
-          }
-          final ExecutableElement methodElement = MoreElements.asExecutable(element);
+      String errorMessage = validateAnnotation(service, annotation);
+      if (errorMessage != null) {
+        printWarning(null, errorMessage);
+        continue;
+      }
 
-          final TypeElement classElement = MoreElements.asType(scanForElementKind(ElementKind.CLASS, methodElement));
-          if (MoreElements.isAnnotationPresent(classElement, Generated.class)) {
-            printWarning(element, "Ignoring element, Generated code!");
-            continue;
-          }
-
-          final String errorMessage = service.validateMethod(methodElement);
-          if (errorMessage != null) {
-            printError(methodElement, errorMessage);
-            continue;
-          }
-
-          builders
-              .computeIfAbsent(//
-                  methodElement, //
-                  key -> MethodBind.builder().setMethodElement(methodElement))//
-              .annotationsBuilder().add(annotation);
+      // Group by Method
+      for (final Element element : elementsByAnnotation.get(annotation)) {
+        errorMessage = validateElement(element);
+        if (errorMessage != null) {
+          printError(element, errorMessage);
+          continue;
         }
+        final ExecutableElement methodElement = MoreElements.asExecutable(element);
+
+        errorMessage = service.validateMethod(methodElement);
+        if (errorMessage != null) {
+          printError(element, errorMessage);
+          continue;
+        }
+
+        builders
+            .computeIfAbsent(//
+                methodElement, //
+                key -> MethodBind.builder().setMethodElement(methodElement))//
+            .annotationsBuilder().add(annotation);
       }
     }
 
     // Group by Class
-    final Multimap<TypeElement, MethodBind> classes = ArrayListMultimap.create();
+    // Tree map to order methods in the same order they appear in the source code.
+    final Multimap<TypeElement, MethodBind> classes = TreeMultimap.create(//
+        (o1, o2) -> o1.getSimpleName().toString().compareTo(o2.getSimpleName().toString()), //
+        (o1, o2) -> Integer.compare(o1.getOrder(), o2.getOrder()));
     builders.values().forEach(b -> {
       final MethodBind bind = b.build();
       classes.put(bind.getClassElement(), bind);
     });
 
     // Process binds by grouped Class
-    classes.keySet().forEach(k -> processBind(k, classes.get(k)));
+    final Map<TypeSpec, TypeElement> generatedTypes = new HashMap<>();
+    for (final TypeElement element : classes.keySet()) {
+      final TypeSpec generatedType = processBind(element, classes.get(element));
+      generatedTypes.put(generatedType, element);
+    }
 
-    // TODO: We should create a Dagger Module with classes binded to their intercepted classes.
+    // Generate Dagger Module for intercepted Classes
+    generateInterceptorModule(processingEnv, generatedTypes);
 
     // PostProcess to Handlers
     for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : services.entrySet()) {
@@ -154,6 +174,63 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
   //
 
   /**
+   * Validates if the contract of a intercepted method has been fulfilled.
+   * 
+   * @param element Element to be validated.
+   * @return String Error message in case the element has not passed validation, <code>null</code> if valid.
+   */
+  private String validateElement(final Element element) {
+    final ElementKind kind = element.getKind();
+    final Set<Modifier> modifiers = element.getModifiers();
+
+    // Is a method
+    if (kind != ElementKind.METHOD) {
+      return "Intercepted element must be a Method!";
+    }
+    // Is not private
+    if (modifiers.contains(Modifier.PRIVATE)) {
+      return "Intercepted methods cannot be Private!";
+    }
+    // Is not abstract
+    if (modifiers.contains(Modifier.ABSTRACT)) {
+      return "Intercepted methods cannot be Abstract!";
+    }
+    // Is not static
+    if (modifiers.contains(Modifier.STATIC)) {
+      return "Intercepted methods cannot be Static!";
+    }
+
+    // Is inside a OuterClass or a Static InnerClass.
+    final TypeElement classElement = MoreElements.asType(scanForElementKind(ElementKind.CLASS, element));
+
+    // Cannot process already Generated Classes
+    if (MoreElements.isAnnotationPresent(classElement, Generated.class)) {
+      // FIXME: This should be just a warning, not an error.
+      return "Ignoring element, Generated code!";
+    }
+    // If Inner Class, must be static
+    if (classElement.getNestingKind() == NestingKind.MEMBER && !classElement.getModifiers().contains(Modifier.STATIC)) {
+      return "Classes with intercepted methods must be Static if it's an Inner Class!";
+    }
+    // Cannot be Final
+    if (classElement.getModifiers().contains(Modifier.FINAL)) {
+      return "Classes with intercepted methods cannot be Final!";
+    }
+    // Must be Abstract
+    // This is to avoid user instantiating it instead the generated version of the class
+    if (!classElement.getModifiers().contains(Modifier.ABSTRACT)) {
+      return "Classes with intercepted methods must be Abstract!";
+    }
+    // Must have one constructor or no constructor at all
+    if (classElement.getEnclosedElements().stream()
+        .filter(enclosedElement -> enclosedElement.getKind() == ElementKind.CONSTRUCTOR).count() > 1) {
+      return "Classes with intercepted methods must have only one constructor!";
+    }
+
+    return null;
+  }
+
+  /**
    * Validate a {@link InterceptorHandler} annotation.
    * 
    * <p>
@@ -165,27 +242,25 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * @param annotation Annotation to be validated.
    * @return true if valid, false otherwise.
    */
-  private boolean validateAnnotation(final InterceptorHandler service, final Class<? extends Annotation> annotation) {
+  private String validateAnnotation(final InterceptorHandler service, final Class<? extends Annotation> annotation) {
     final Retention retention = annotation.getAnnotation(Retention.class);
     if (retention != null && retention.value() != RUNTIME) {
-      printWarning(null, "InterceptorHandler annotation must have Retention set to RUNTIME. Ignoring " //
-          + service.getClass().toString());
-      return false;
+      return "InterceptorHandler annotation must have Retention set to RUNTIME. Ignoring " //
+          + service.getClass().toString();
     }
     final Target target = annotation.getAnnotation(Target.class);
     if (target != null && target.value().length != 1 || target.value()[0] != ElementType.METHOD) {
-      printWarning(null, "InterceptorHandler annotation must have Target set to METHOD. Ignoring " //
-          + service.getClass().toString());
-      return false;
+      return "InterceptorHandler annotation must have Target set to METHOD. Ignoring " //
+          + service.getClass().toString();
     }
 
-    return true;
+    return null;
   }
 
   /**
    * Process {@link MethodBind MethodBinds} using the {@link InterceptorGenerator}.
    */
-  private void processBind(final TypeElement superClassElement, final Collection<MethodBind> methodBinds) {
+  private TypeSpec processBind(final TypeElement superClassElement, final Collection<MethodBind> methodBinds) {
     final Element packageElement = scanForElementKind(ElementKind.PACKAGE, superClassElement);
     final String packageName = MoreElements.asPackage(packageElement).getQualifiedName().toString();
 
@@ -202,6 +277,36 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
       }
     }
+    return interceptorClass;
+  }
+
+  private void generateInterceptorModule(final ProcessingEnvironment processingEnv,
+      final Map<TypeSpec, TypeElement> generatedTypes) {
+    final String className = "InterceptorModule";
+
+    final TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className) //
+        .addModifiers(PUBLIC, ABSTRACT)//
+        .addJavadoc("This class is the default Dagger module for Intercepted Methods.\n")//
+        .addAnnotation(Module.class);
+
+    for (final Entry<TypeSpec, TypeElement> entry : generatedTypes.entrySet()) {
+
+      final ClassName sourceClass = ClassName.get(entry.getValue());
+      final ClassName superClass = ClassName.get(sourceClass.packageName(), entry.getKey().name);
+
+      final MethodSpec method = MethodSpec.methodBuilder("providesJpaService")//
+          .addModifiers(ABSTRACT)//
+          .addAnnotation(Binds.class)//
+          .returns(sourceClass)//
+          .addParameter(superClass, "impl", FINAL)//
+          .build();
+      classBuilder.addMethod(method);
+    }
+
+    InterceptorProcessor.writeClass(//
+        processingEnv, //
+        PACKAGE, //
+        classBuilder.build());
   }
 
   /**
@@ -219,7 +324,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
   /**
    * Print a Warning message to Processing Environment.
-   * 
+   *
    * @param element Element that generated the message.
    * @param message Message to be printed.
    */
