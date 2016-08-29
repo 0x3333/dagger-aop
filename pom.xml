@@ -41,19 +41,16 @@
             <artifactId>dagger</artifactId>
             <version>${dagger.version}</version>
         </dependency>
-
         <dependency>
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>
             <version>1.7.0</version>
         </dependency>
-
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0</version>
         </dependency>
-
         <dependency>
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value</artifactId>
@@ -87,11 +84,11 @@
 
     <profiles>
         <profile>
-            <id>full-build</id>
+            <id>errorprone</id>
             <activation>
                 <property>
                     <name>build</name>
-                    <value>test</value>
+                    <value>error</value>
                 </property>
             </activation>
             <build>
