@@ -18,7 +18,7 @@ This library has been created with a simple intent in mind, allow Dagger 2 based
 Example
 -------
 
-### A real implementation can be found here: [dagger-jpa](https://github.com/0x3333/dagger-jpa/).
+### Another more complex example implementation can be found here: [dagger-jpa](https://github.com/0x3333/dagger-jpa/).
 
 Imagine that you want to log some information everytime a method is called. You could just add the logger call to the method, like:
 
