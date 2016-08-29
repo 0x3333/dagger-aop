@@ -5,16 +5,20 @@
 Usage
 -----
 
-dagger-aop is a basic AOP implementation based on the concept of static code generation and compile-time method interceptor using Annotation Processing Tool (APT).
+***dagger-aop*** is a lightweight AOP implementation based on the concept of static code generation and compile-time method interceptor using Annotation Processing Tool (APT).
 
-By itself, it has no method interceptors, but it is fully extensible using Java Service Handlers implementing a simple interface.
+By itself, it has no method interceptors, but it is fully extensible using Java Service Handlers by implementing a simple interface.
 
-Basically, it creates a subclass of the intercepted class, with the target methods replaced by a custom code, which will call the `MethodInterceptor`. It can be nested, allowing multiple interceptions in a single method.
+Basically, it creates a subclass of the intercepted class, with the target methods replaced by a custom code, which will call the `MethodInterceptor`. It can be nested, allowing multiple interceptions in a single method. *** Curently the order is undetermined, I'll work on this later.***
+
+Your `InterceptorHandler` can generate classes or do some work after the processor has run. An example can be found [here](https://github.com/0x3333/dagger-jpa/blob/master/src/main/java/com/github/x3333/dagger/jpa/TransactionalInterceptorHandler.java#L134).
 
 This library has been created with a simple intent in mind, allow Dagger 2 based projects intercept methods to make them transactional. After some experiments, I generalized the code allowing to create other interceptors. If you believe it should do something else, fell free to create an issue.
 
 Example
 -------
+
+### A real implementation can be found here: [dagger-jpa](https://github.com/0x3333/dagger-jpa/).
 
 Imagine that you want to log some information everytime a method is called. You could just add the logger call to the method, like:
 
@@ -82,9 +86,9 @@ public class LogInterceptorHandler implements InterceptorHandler {
 }
 ```
 
-We are all set! Now, a new class will be generated, Interceptor_SomeClass, this newly created class will create a constructor, or modify a existent one with its new dependency, LogInterceptor. You have to use this class, bind it in your Dagger Module.
+We are all set! Now, a new class will be generated, Interceptor_SomeClass, this newly created class will create a constructor, or modify a existent one, with its new dependency, LogInterceptor. You have to use this class, bind it in your Dagger Module.
 
-More documentation as I progress.
+More documentation later.
 
 License
 -------
