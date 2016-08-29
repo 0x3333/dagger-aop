@@ -76,13 +76,6 @@
                         <phase>generate-sources</phase>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.google.dagger</groupId>
-                        <artifactId>dagger-compiler</artifactId>
-                        <version>${dagger.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
