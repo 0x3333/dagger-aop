@@ -13,13 +13,18 @@
 
 package com.github.x3333.dagger.aop.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.processing.Processor;
 import javax.lang.model.SourceVersion;
 
 import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.service.AutoService;
+import com.google.common.collect.Sets;
 
 /**
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
@@ -27,14 +32,36 @@ import com.google.auto.service.AutoService;
 @AutoService(Processor.class)
 public class InterceptorProcessor extends BasicAnnotationProcessor {
 
+  protected static String OPTION_GENERATE_DAGGER_MODULE = "aop.generate.module";
+  protected static String OPTION_DAGGER_MODULE_PACKAGE = "aop.module.package";
+
   @Override
   public SourceVersion getSupportedSourceVersion() {
     return SourceVersion.latestSupported();
   }
 
   @Override
+  public Set<String> getSupportedOptions() {
+    return Sets.newHashSet(OPTION_GENERATE_DAGGER_MODULE, OPTION_DAGGER_MODULE_PACKAGE);
+  }
+
+  @Override
   protected Iterable<? extends ProcessingStep> initSteps() {
-    return Collections.singleton(new InterceptorProcessorStep(processingEnv));
+    final Optional<Boolean> generateModule = getBooleanOption(OPTION_GENERATE_DAGGER_MODULE);
+    final Optional<String> modulePackage = getOption(OPTION_DAGGER_MODULE_PACKAGE);
+
+    return Collections.singleton(new InterceptorProcessorStep(processingEnv, generateModule, modulePackage));
+  }
+
+  protected Optional<String> getOption(final String option) {
+    checkNotNull(option);
+    return Optional.ofNullable(processingEnv.getOptions().get(option));
+  }
+
+  protected Optional<Boolean> getBooleanOption(final String option) {
+    checkNotNull(option);
+    final String value = processingEnv.getOptions().get(option);
+    return Optional.ofNullable(value == null ? null : Boolean.valueOf(value));
   }
 
 }

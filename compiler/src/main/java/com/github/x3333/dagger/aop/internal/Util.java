@@ -41,59 +41,77 @@ import com.squareup.javapoet.TypeName;
 final class Util {
 
   /**
-   * Return the nearest Element of Kind <code>kind</code> in the enclosing elements.
+   * Return the nearest {@link Element} of Kind <code>kind</code> in the {@link Element#getEnclosingElement() enclosing elements}.
    * 
    * @param kind Kind of the element to scan.
    * @param element Element that will be scanned.
    * @return Nearest Element.
    */
-  static Element scanForElementKind(final ElementKind kind, final Element element) {
-    Element enclosingElement = element.getEnclosingElement();
-    while (enclosingElement != null && enclosingElement.getKind() != kind) {
-      enclosingElement = enclosingElement.getEnclosingElement();
+  static Element scanForElementKind(final ElementKind kind, Element element) {
+    while (element != null && element.getKind() != kind) {
+      element = element.getEnclosingElement();
     }
-    return enclosingElement;
+    return element;
   }
 
   /**
-   * Convert a {@link AnnotationMirror}s to AnnotationSpec.
+   * Convert a {@link AnnotationMirror}s to {@link AnnotationSpec}.
    */
   static Iterable<AnnotationSpec> toSpec(final Iterable<? extends AnnotationMirror> mirrors) {
     return Iterables.transform(mirrors, AnnotationSpec::get);
   }
 
   /**
-   * Convert a Element iterable to a Iterable of Strings using Element::getSimpleName().
+   * Convert a {@link Iterable} of {@link Element} to a {@link Iterable} of {@link String} using {@link Element#getSimpleName()}.
    */
   static Iterable<String> simpleNames(final Iterable<? extends Element> elements) {
     return Iterables.transform(elements, e -> e.getSimpleName().toString());
   }
 
   /**
-   * Clone a Constructor ExecutableElement into a MethodSpec.Builder instance.
+   * Clone a Constructor {@link ExecutableElement} into a {@link MethodSpec.Builder} instance.
    * 
    * <p>
    * The cloned constructor will call super as first statement.
+   * 
+   * <p>
+   * These elements will be cloned:
+   * <ul>
+   * <li>Annotations</li>
+   * <li>Modifiers</li>
+   * <li>Parameters</li>
+   * <li>Exceptions</li>
+   * </ul>
    */
   static MethodSpec.Builder cloneConstructor(final ExecutableElement element) {
     checkArgument(element.getKind() == ElementKind.CONSTRUCTOR);
 
     final Set<Modifier> modifiers = element.getModifiers();
     final List<ParameterSpec> parameters = Lists.transform(element.getParameters(), Util::cloneParameter);
+    final List<TypeName> exceptions = Lists.transform(element.getThrownTypes(), TypeName::get);
     final Iterable<AnnotationSpec> annotations = toSpec(element.getAnnotationMirrors());
 
     return MethodSpec.constructorBuilder() //
+        .addAnnotations(annotations) //
         .addModifiers(modifiers) //
         .addParameters(parameters) //
-        .addAnnotations(annotations) //
+        .addExceptions(exceptions) //
         .addStatement("super($L)", Joiner.on(", ").join(simpleNames(element.getParameters())));
   }
 
   /**
-   * Clone a Method ExecutableElement into a MethodSpec.Builder instance.
+   * Clone a Method {@link ExecutableElement} into a {@link MethodSpec.Builder} instance.
    * 
    * <p>
-   * This implementation doesn't clone annotations.
+   * These elements will be cloned:
+   * <ul>
+   * <li>Modifiers</li>
+   * <li>Parameters</li>
+   * <li>Exceptions</li>
+   * </ul>
+   * 
+   * <p>
+   * Annotations aren't cloned.
    */
   static MethodSpec.Builder cloneMethod(final ExecutableElement element) {
     checkArgument(element.getKind() == ElementKind.METHOD);
@@ -112,7 +130,16 @@ final class Util {
   }
 
   /**
-   * Clone a Parameter VariableElement into a ParameterSpec instance.
+   * Clone a Parameter {@link VariableElement} into a {@link ParameterSpec} instance.
+   * 
+   * <p>
+   * These elements will be cloned:
+   * <ul>
+   * <li>Type</li>
+   * <li>Name</li>
+   * <li>Modifiers</li>
+   * <li>Annotations</li>
+   * </ul>
    */
   static ParameterSpec cloneParameter(final VariableElement element) {
     checkArgument(element.getKind() == ElementKind.PARAMETER);

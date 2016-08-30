@@ -15,9 +15,12 @@ package com.github.x3333.dagger.aop.internal;
 
 import static com.github.x3333.dagger.aop.internal.Util.scanForElementKind;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static javax.lang.model.element.ElementKind.METHOD;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 import static javax.lang.model.element.Modifier.FINAL;
+import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
+import static javax.lang.model.element.Modifier.STATIC;
 
 import com.github.x3333.dagger.aop.InterceptorHandler;
 import com.github.x3333.dagger.aop.MethodInterceptor;
@@ -36,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -48,6 +52,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
 
@@ -55,7 +60,7 @@ import com.google.auto.common.BasicAnnotationProcessor;
 import com.google.auto.common.MoreElements;
 import com.google.auto.common.Visibility;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
@@ -76,6 +81,8 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
   private static final String PACKAGE = MethodInterceptor.class.getPackage().getName();
 
   private final ProcessingEnvironment processingEnv;
+  private final Optional<Boolean> generateModule;
+  private final Optional<String> modulePackage;
   private final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services;
   private final InterceptorGenerator generator;
 
@@ -85,17 +92,20 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * Create a InterceptorProcessorStep instance.
    * 
    * @param processingEnv ProcessingEnvironment associated to the Processor.
+   * @param generateModule If we should generate a Dagger Module for intercepted methods.
+   * @param modulePackage If we should generate a Dagger Module, in which package it should be created.
    */
-  public InterceptorProcessorStep(final ProcessingEnvironment processingEnv) {
+  public InterceptorProcessorStep(final ProcessingEnvironment processingEnv, final Optional<Boolean> generateModule,
+      final Optional<String> modulePackage) {
     this.processingEnv = processingEnv;
-
-    final Builder<Class<? extends Annotation>, InterceptorHandler> builder = ImmutableMap.builder();
-    ServiceLoader//
-        .load(InterceptorHandler.class, this.getClass().getClassLoader())//
-        .forEach(service -> builder.put(service.annotation(), service));
-
-    services = builder.build();
+    this.generateModule = generateModule;
+    this.modulePackage = modulePackage;
+    final ServiceLoader<InterceptorHandler> handlers =
+        ServiceLoader.load(InterceptorHandler.class, this.getClass().getClassLoader());
+    services = Maps.uniqueIndex(handlers, InterceptorHandler::annotation);
+    services.forEach((k, v) -> validateAnnotation(v, k));
     generator = new InterceptorGenerator(services);
+
   }
 
   //
@@ -107,23 +117,20 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
   @Override
   public Set<Element> process(final SetMultimap<Class<? extends Annotation>, Element> elementsByAnnotation) {
+    // No services registered, maybe a missing dependency?
     if (services.size() == 0) {
       printError(null,
           "No InterceptorHandler registered. Did you forgot to add some interceptor in your dependencies?");
+      return Collections.emptySet();
     }
+
     final Map<ExecutableElement, MethodBind.Builder> builders = new HashMap<>();
     for (final Class<? extends Annotation> annotation : services.keySet()) {
       final InterceptorHandler service = services.get(annotation);
 
-      String errorMessage = validateAnnotation(service, annotation);
-      if (errorMessage != null) {
-        printWarning(null, errorMessage);
-        continue;
-      }
-
       // Group by Method
       for (final Element element : elementsByAnnotation.get(annotation)) {
-        errorMessage = validateElement(element);
+        String errorMessage = validateElement(element);
         if (errorMessage != null) {
           printError(element, errorMessage);
           continue;
@@ -161,8 +168,10 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
       generatedTypes.put(generatedType, element);
     }
 
-    // Generate Dagger Module for intercepted Classes
-    generateInterceptorModule(processingEnv, generatedTypes);
+    if (generateModule.isPresent() && generateModule.get()) {
+      // Generate Dagger Module for intercepted Classes
+      generateInterceptorModule(generatedTypes);
+    }
 
     // PostProcess to Handlers
     for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : services.entrySet()) {
@@ -179,6 +188,41 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
   /**
    * Validates if the contract of a intercepted method has been fulfilled.
    * 
+   * <p>
+   * Element constraints:
+   * <ul>
+   * <li>Must have:
+   * <ul>
+   * <li>{@link ElementKind#METHOD}</li>
+   * </ul>
+   * </li>
+   * <li>Can't have:
+   * <ul>
+   * <li>{@link Modifier#PRIVATE}</li>
+   * <li>{@link Modifier#ABSTRACT}</li>
+   * <li>{@link Modifier#STATIC}</li>
+   * </ul>
+   * </li>
+   * </ul>
+   * 
+   * <p>
+   * Element declaring Class constraints:
+   * <ul>
+   * <li>Must have:
+   * <ul>
+   * <li>{@link Modifier#ABSTRACT}</li>
+   * <li>if Inner Class {@link Modifier#STATIC}</li>
+   * </ul>
+   * </li>
+   * <li>Can't have:
+   * <ul>
+   * <li>{@link Modifier#FINAL}</li>
+   * <li>{@link Generated @Generated}</li>
+   * <li>{@link Modifier#ABSTRACT} Method</li>
+   * </ul>
+   * </li>
+   * </ul>
+   * 
    * @param element Element to be validated.
    * @return String Error message in case the element has not passed validation, <code>null</code> if valid.
    */
@@ -186,34 +230,33 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     final ElementKind kind = element.getKind();
     final Set<Modifier> modifiers = element.getModifiers();
 
-    // Is a method
-    if (kind != ElementKind.METHOD) {
+    if (kind != METHOD) {
       return "Intercepted element must be a Method!";
     }
-    // Is not private
-    if (modifiers.contains(Modifier.PRIVATE)) {
+    if (modifiers.contains(PRIVATE)) {
       return "Intercepted methods cannot be Private!";
     }
-    // Is not abstract
-    if (modifiers.contains(Modifier.ABSTRACT)) {
+    if (modifiers.contains(FINAL)) {
+      return "Intercepted methods cannot be Final!";
+    }
+    if (modifiers.contains(ABSTRACT)) {
       return "Intercepted methods cannot be Abstract!";
     }
-    // Is not static
-    if (modifiers.contains(Modifier.STATIC)) {
+    if (modifiers.contains(STATIC)) {
       return "Intercepted methods cannot be Static!";
     }
 
     // Is inside a OuterClass or a Static InnerClass.
     final TypeElement classElement = MoreElements.asType(scanForElementKind(ElementKind.CLASS, element));
 
+    if (ElementFilter.methodsIn(classElement.getEnclosedElements()).stream()//
+        .filter(e -> e.getModifiers().contains(ABSTRACT)).count() > 0) {
+      return "Classes with intercepted methods cannot have Abstract methods!";
+    }
+
     // Cannot process already Generated Classes
     if (MoreElements.isAnnotationPresent(classElement, Generated.class)) {
-      // FIXME: This should be just a warning, not an error.
-      return "Ignoring element, Generated code!";
-    }
-    // If Inner Class, must be static
-    if (classElement.getNestingKind() == NestingKind.MEMBER && !classElement.getModifiers().contains(Modifier.STATIC)) {
-      return "Classes with intercepted methods must be Static if it's an Inner Class!";
+      return "Generated code cannot be processed!";
     }
     // Cannot be Final
     if (classElement.getModifiers().contains(Modifier.FINAL)) {
@@ -223,6 +266,10 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     // This is to avoid user instantiating it instead the generated version of the class
     if (!classElement.getModifiers().contains(Modifier.ABSTRACT)) {
       return "Classes with intercepted methods must be Abstract!";
+    }
+    // If Inner Class, must be static
+    if (classElement.getNestingKind() == NestingKind.MEMBER && !classElement.getModifiers().contains(Modifier.STATIC)) {
+      return "Classes with intercepted methods must be Static if it's an Inner Class!";
     }
     // Must have one constructor or no constructor at all
     if (classElement.getEnclosedElements().stream()
@@ -237,27 +284,27 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * Validate a {@link InterceptorHandler} annotation.
    * 
    * <p>
+   * If annotation is <em>invalid</em>, an {@link UnsupportedOperationException} will be thrown.
+   * 
+   * <p>
    * {@link InterceptorHandler InterceptorHandlers} annotations must have {@link Retention} set to {@link RetentionPolicy
    * RetentionPolicy.RUNTIME} and {@link Target} set to {@link ElementType ElementType.METHOD}.
    * 
    * @param service
    * 
    * @param annotation Annotation to be validated.
-   * @return true if valid, false otherwise.
    */
-  private String validateAnnotation(final InterceptorHandler service, final Class<? extends Annotation> annotation) {
+  private void validateAnnotation(final InterceptorHandler service, final Class<? extends Annotation> annotation) {
     final Retention retention = annotation.getAnnotation(Retention.class);
     if (retention != null && retention.value() != RUNTIME) {
-      return "InterceptorHandler annotation must have Retention set to RUNTIME. Ignoring " //
-          + service.getClass().toString();
+      throw new UnsupportedOperationException(
+          String.format("%s Annotation '%s' must have Retention set to RUNTIME.", service.getClass(), annotation));
     }
     final Target target = annotation.getAnnotation(Target.class);
     if (target != null && target.value().length != 1 || target.value()[0] != ElementType.METHOD) {
-      return "InterceptorHandler annotation must have Target set to METHOD. Ignoring " //
-          + service.getClass().toString();
+      throw new UnsupportedOperationException(
+          String.format("%s Annotation '%s' must have Target set to METHOD.", service.getClass(), annotation));
     }
-
-    return null;
   }
 
   /**
@@ -283,9 +330,10 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     return interceptorClass;
   }
 
-  private void generateInterceptorModule(final ProcessingEnvironment processingEnv,
-      final Map<TypeSpec, TypeElement> generatedTypes) {
+  private void generateInterceptorModule(final Map<TypeSpec, TypeElement> generatedTypes) {
     final String className = "InterceptorModule";
+    final PackageElement pkg = processingEnv.getElementUtils().getPackageElement(//
+        modulePackage.isPresent() ? modulePackage.get() : PACKAGE);
 
     final TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className) //
         .addModifiers(PUBLIC, ABSTRACT)//
@@ -296,7 +344,6 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     for (final Entry<TypeSpec, TypeElement> entry : generatedTypes.entrySet()) {
       final TypeElement sourceElement = entry.getValue();
 
-      final PackageElement pkg = processingEnv.getElementUtils().getPackageElement(PACKAGE);
       if (!isVisibleFrom(sourceElement, pkg)) {
         printWarning(sourceElement,
             "Could not create InterceptorModule bind, source class is not visible outside its package!");
@@ -319,7 +366,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     if (count > 0) {
       SourceGenerator.writeClass(//
           processingEnv, //
-          PACKAGE, //
+          pkg.getQualifiedName().toString(), //
           classBuilder.build());
     }
   }

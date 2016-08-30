@@ -13,8 +13,10 @@
 
 package com.github.x3333.dagger.aop;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assert_;
 import static com.google.testing.compile.JavaSourceSubjectFactory.javaSource;
+import static org.junit.Assert.fail;
 
 import com.github.x3333.dagger.aop.internal.InterceptorProcessor;
 
@@ -64,6 +66,52 @@ public class GeneratorTest {
   }
 
   @Test
+  public void generatorWithModuleCustomPackage() {
+    final JavaFileObject sourceFile = JavaFileObjects //
+        .forResource("unit/WithoutConstructor.java");
+
+    final JavaFileObject generatedFile = JavaFileObjects//
+        .forResource("unit/Interceptor_WithoutConstructor.java");
+
+    final JavaFileObject interceptorModuleFile = JavaFileObjects//
+        .forResource("unit/InterceptorModule.java");
+
+    assert_()//
+        .about(javaSource())//
+        .that(sourceFile)//
+        .withCompilerOptions("-Aaop.generate.module=true", "-Aaop.module.package=test")//
+        .processedWith(new InterceptorProcessor())//
+        .compilesWithoutError()//
+        .and()//
+        .generatesSources(generatedFile, interceptorModuleFile);
+  }
+
+  @Test
+  public void generatorWithoutModule() {
+    final JavaFileObject sourceFile = JavaFileObjects //
+        .forResource("unit/WithoutConstructor.java");
+
+    final JavaFileObject interceptorModuleFile = JavaFileObjects//
+        .forResource("unit/InterceptorModule.java");
+    try {
+      assert_()//
+          .about(javaSource())//
+          .that(sourceFile)//
+          .withCompilerOptions("-Aaop.generate.module=false")//
+          .processedWith(new InterceptorProcessor())//
+          .compilesWithoutError()//
+          .and()//
+          .generatesSources(interceptorModuleFile);
+      fail();
+    } catch (final AssertionError expected) {
+      assertThat(expected.getMessage())//
+          .contains("An expected source declared one or more top-level types that were not present.");
+      assertThat(expected.getMessage())//
+          .contains("Expected top-level types: <[test.InterceptorModule]>");
+    }
+  }
+
+  @Test
   public void generatorMultipleConstructorsInterceptions() {
     final JavaFileObject sourceFile = JavaFileObjects //
         .forResource("unit/MultipleConstructors.java");
@@ -73,7 +121,7 @@ public class GeneratorTest {
         .that(sourceFile)//
         .processedWith(new InterceptorProcessor())//
         .failsToCompile()//
-        .withErrorContaining("only one constructor");
+        .withErrorContaining("Classes with intercepted methods must have only one constructor");
   }
 
   @Test
@@ -87,6 +135,19 @@ public class GeneratorTest {
         .processedWith(new InterceptorProcessor())//
         .failsToCompile()//
         .withErrorContaining("Classes with intercepted methods must be Abstract");
+  }
+
+  @Test
+  public void generatorAbstractMethodInterceptions() {
+    final JavaFileObject sourceFile = JavaFileObjects //
+        .forResource("unit/AbstractMethod.java");
+
+    assert_()//
+        .about(javaSource())//
+        .that(sourceFile)//
+        .processedWith(new InterceptorProcessor())//
+        .failsToCompile()//
+        .withErrorContaining("Classes with intercepted methods cannot have Abstract methods");
   }
 
 }

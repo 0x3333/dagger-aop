@@ -37,6 +37,7 @@ public final class SourceGenerator {
   /**
    * Generate the {@link Generated} annotation.
    * 
+   * @param generator Generator class to be set as value in the Generated annotation.
    * @return Generated annotation populated.
    */
   public static AnnotationSpec generatedAnnotation(final Class<?> generator) {
