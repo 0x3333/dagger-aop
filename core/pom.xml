@@ -11,12 +11,7 @@
     <name>Dagger 2 AOP - Core</name>
     <artifactId>dagger-aop-core</artifactId>
 
-    <properties>
-        <checkstyle.config>${basedir}/../checkstyle.xml</checkstyle.config>
-    </properties>
-
     <dependencies>
-        <!-- Compile -->
         <dependency>
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>
@@ -27,7 +22,19 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

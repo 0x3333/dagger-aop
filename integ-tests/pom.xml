@@ -11,16 +11,17 @@
     <name>Dagger 2 AOP - Integration Tests</name>
     <artifactId>dagger-aop-integ-tests</artifactId>
 
-    <properties>
-        <checkstyle.config>${basedir}/../checkstyle.xml</checkstyle.config>
-    </properties>
-
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
+    
 </project>
