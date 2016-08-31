@@ -105,7 +105,6 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     services = Maps.uniqueIndex(handlers, InterceptorHandler::annotation);
     services.forEach((k, v) -> validateAnnotation(v, k));
     generator = new InterceptorGenerator(services);
-
   }
 
   //
@@ -217,7 +216,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * <li>Can't have:
    * <ul>
    * <li>{@link Modifier#FINAL}</li>
-   * <li>{@link Generated @Generated}</li>
+   * <li>{@link Generated &#064;Generated}</li>
    * <li>{@link Modifier#ABSTRACT} Method</li>
    * </ul>
    * </li>

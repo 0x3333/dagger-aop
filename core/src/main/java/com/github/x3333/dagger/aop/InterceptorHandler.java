@@ -24,8 +24,13 @@ import javax.lang.model.element.TypeElement;
  * Base interface for {@link MethodInterceptor} handlers.
  * 
  * <p>
+ * Handlers binds {@link Annotation} and {@link MethodInterceptor} together. Also it can validate the annotated element and
+ * {@link #postProcess(ProcessingEnvironment, Set) post process} processed classes.
+ * 
+ * <p>
  * {@link MethodInterceptor}s must registered to this Java Service using this Interface. Can be done using
- * <code>@AutoService(InterceptorHandler.class)</code> from <a href="https://github.com/google/auto/tree/master/service">Google Auto</a>.
+ * <code>&#064;AutoService(InterceptorHandler.class)</code> from <a href="https://github.com/google/auto/tree/master/service">Google
+ * Auto</a>.
  * 
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
@@ -59,7 +64,8 @@ public interface InterceptorHandler {
   }
 
   /**
-   * Called after the Generator has processed all annotated classes.
+   * Called after the Generator has processed all annotated classes. Post processing can be helpful to generate more classes or configuring
+   * the environment.
    * 
    * @param processingEnv {@link ProcessingEnvironment} associated with this generation.
    * @param processedClasses All processed classes that belongs to this Handler.
