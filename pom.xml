@@ -73,6 +73,7 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Compilation -->
             <dependency>
                 <groupId>com.google.dagger</groupId>
                 <artifactId>dagger</artifactId>
@@ -106,6 +107,7 @@
                 <scope>provided</scope>
             </dependency>
 
+            <!-- Test -->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
@@ -113,15 +115,15 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.google.testing.compile</groupId>
-                <artifactId>compile-testing</artifactId>
-                <version>${compiletesting.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>com.google.truth</groupId>
                 <artifactId>truth</artifactId>
                 <version>${truth.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.google.testing.compile</groupId>
+                <artifactId>compile-testing</artifactId>
+                <version>${compiletesting.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -169,7 +171,26 @@
                             </goals>
                             <phase>generate-sources</phase>
                         </execution>
+                        <execution>
+                            <id>process-test</id>
+                            <goals>
+                                <goal>process-test</goal>
+                            </goals>
+                            <phase>generate-test-sources</phase>
+                        </execution>
                     </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.google.dagger</groupId>
+                            <artifactId>dagger-compiler</artifactId>
+                            <version>${dagger.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>dagger-aop-compiler</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
 
                 <!-- Checkstyle -->
@@ -177,13 +198,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>2.17</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>dagger-aop-tools</artifactId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
                     <executions>
                         <execution>
                             <id>checkstyle</id>
@@ -191,16 +205,23 @@
                                 <goal>check</goal>
                             </goals>
                             <phase>validate</phase>
-                            <configuration>
-                                <consoleOutput>true</consoleOutput>
-                                <failsOnError>true</failsOnError>
-                                <linkXRef>false</linkXRef>
-                                <configLocation>dagger-aop-checkstyle.xml</configLocation>
-                                <!-- Only process files in the source directory, ignoring APT generated files -->
-                                <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-                            </configuration>
                         </execution>
                     </executions>
+                    <configuration>
+                        <consoleOutput>true</consoleOutput>
+                        <failsOnError>true</failsOnError>
+                        <linkXRef>false</linkXRef>
+                        <configLocation>dagger-aop-checkstyle.xml</configLocation>
+                        <!-- Only process files in the source directory, ignoring APT generated files -->
+                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>dagger-aop-tools</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
 
                 <!-- Add sources to JAR -->
@@ -239,4 +260,5 @@
             </plugins>
         </pluginManagement>
     </build>
+
 </project>
