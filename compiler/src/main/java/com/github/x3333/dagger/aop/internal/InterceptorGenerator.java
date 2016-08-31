@@ -191,8 +191,13 @@ class InterceptorGenerator {
           .addStatement("throw new RuntimeException(e)").unindent()//
           .add("}\n");
 
+      final CodeBlock argumentsBlock = CodeBlock.builder()//
+          .addStatement("final $T[] arguments = new $T[] { $L }", Object.class, Object.class, joinedParameterNames)//
+          .build();
+
       final MethodSpec method = cloneMethod(MoreElements.asExecutable(methodElement))//
           .addAnnotation(Override.class)//
+          .addCode(argumentsBlock)//
           .addCode(tryBlock.build())//
           .build();
 
@@ -278,6 +283,7 @@ class InterceptorGenerator {
         .add("$L$L.invoke(new $T(\n", prefix, interceptorFieldName, AbstractMethodInvocation.class).indent().indent()//
         .add("$L.this, \n", interceptorName) //
         .add("$L.$L, \n", interceptorName, methodCacheFieldName) //
+        .add("arguments, \n") //
         .add("$L.$L) {\n", interceptorName, annotationsFieldName).unindent()//
         .add(method).unindent()//
         .add("});\n")//

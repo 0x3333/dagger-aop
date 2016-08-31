@@ -34,11 +34,14 @@ public abstract class AbstractMethodInvocation implements MethodInvocation {
 
   private final Object instance;
   private final Method method;
+  private final Object[] arguments;
   private final List<Annotation> annotations;
 
-  public AbstractMethodInvocation(final Object instance, final Method method, final List<Annotation> annotations) {
+  public AbstractMethodInvocation(final Object instance, final Method method, final Object[] arguments,
+      final List<Annotation> annotations) {
     this.instance = instance;
     this.method = method;
+    this.arguments = arguments;
     this.annotations = annotations;
   }
 
@@ -50,6 +53,11 @@ public abstract class AbstractMethodInvocation implements MethodInvocation {
   @Override
   public Method getMethod() {
     return method;
+  }
+
+  @Override
+  public Object[] getArguments() {
+    return arguments;
   }
 
   @Override

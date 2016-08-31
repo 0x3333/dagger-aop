@@ -14,7 +14,7 @@ public abstract class WithoutConstructor {
   }
 
   @ValidAnnotation
-  public void doSomeWorkNoReturn() {}
+  public void doSomeWorkNoReturn(String param1) {}
 
   @ValidAnnotation
   public void doSomeWorkNoReturnThrows() throws MyException {}

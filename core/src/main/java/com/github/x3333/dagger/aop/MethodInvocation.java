@@ -42,6 +42,13 @@ public interface MethodInvocation {
   Method getMethod();
 
   /**
+   * All arguments that had been passed to the Method.
+   * 
+   * @return Array of objects in the order they are provided.
+   */
+  Object[] getArguments();
+
+  /**
    * All the annotations that the method intercepted has in runtime.
    * 
    * @return Method's annotations.

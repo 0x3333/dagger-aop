@@ -13,7 +13,7 @@ public abstract class WithConstructor {
   public WithConstructor(@Named("myDepAnnotation") final String someDep) {}
   
   @ValidAnnotation
-  public String doSomeWorkReturn() {
+  public String doSomeWorkReturn(String param1) {
     return null;
   }
 

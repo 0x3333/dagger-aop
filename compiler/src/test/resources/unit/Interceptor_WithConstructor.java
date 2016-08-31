@@ -3,6 +3,7 @@ package test;
 import com.github.x3333.dagger.aop.AbstractMethodInvocation;
 import com.github.x3333.dagger.aop.test.Interceptor;
 import com.github.x3333.dagger.aop.test.Interceptor2;
+import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.lang.Throwable;
@@ -37,7 +38,7 @@ public final class Interceptor_WithConstructor extends WithConstructor {
 
   static {
     try {
-      doSomeWorkReturnCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkReturn");
+      doSomeWorkReturnCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkReturn", String.class);
       doSomeWorkReturnAnnotationsCache$ = Arrays.asList(doSomeWorkReturnCache$.getAnnotations());
       doSomeWorkNoReturnCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkNoReturn");
       doSomeWorkNoReturnAnnotationsCache$ = Arrays.asList(doSomeWorkNoReturnCache$.getAnnotations());
@@ -62,15 +63,17 @@ public final class Interceptor_WithConstructor extends WithConstructor {
   }
 
   @Override
-  public String doSomeWorkReturn() {
+  public String doSomeWorkReturn(String param1) {
+    final Object[] arguments = new Object[] { param1 };
     try {
       return $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
           Interceptor_WithConstructor.this,
           Interceptor_WithConstructor.doSomeWorkReturnCache$,
+          arguments,
           Interceptor_WithConstructor.doSomeWorkReturnAnnotationsCache$) {
         @Override
         public String proceed() throws Throwable {
-          return Interceptor_WithConstructor.super.doSomeWorkReturn();
+          return Interceptor_WithConstructor.super.doSomeWorkReturn(param1);
         }
       });
     } catch (Throwable e) {
@@ -80,10 +83,12 @@ public final class Interceptor_WithConstructor extends WithConstructor {
 
   @Override
   public void doSomeWorkNoReturn() {
+    final Object[] arguments = new Object[] {  };
     try {
       $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
           Interceptor_WithConstructor.this,
           Interceptor_WithConstructor.doSomeWorkNoReturnCache$,
+          arguments,
           Interceptor_WithConstructor.doSomeWorkNoReturnAnnotationsCache$) {
         @Override
         protected void noReturnProceed() throws Throwable {
@@ -97,10 +102,12 @@ public final class Interceptor_WithConstructor extends WithConstructor {
 
   @Override
   public void doSomeWorkNoReturnThrows() throws WithConstructor.MyException {
+    final Object[] arguments = new Object[] {  };
     try {
       $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
           Interceptor_WithConstructor.this,
           Interceptor_WithConstructor.doSomeWorkNoReturnThrowsCache$,
+          arguments,
           Interceptor_WithConstructor.doSomeWorkNoReturnThrowsAnnotationsCache$) {
         @Override
         protected void noReturnProceed() throws Throwable {
@@ -116,16 +123,19 @@ public final class Interceptor_WithConstructor extends WithConstructor {
 
   @Override
   public void doSomeWorkMultipleAndThrows() throws WithConstructor.MyException {
+    final Object[] arguments = new Object[] {  };
     try {
       $interceptorValidAnnotation2.invoke(new AbstractMethodInvocation(
           Interceptor_WithConstructor.this,
           Interceptor_WithConstructor.doSomeWorkMultipleAndThrowsCache$,
+          arguments,
           Interceptor_WithConstructor.doSomeWorkMultipleAndThrowsAnnotationsCache$) {
         @Override
         protected void noReturnProceed() throws Throwable {
           $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
               Interceptor_WithConstructor.this,
               Interceptor_WithConstructor.doSomeWorkMultipleAndThrowsCache$,
+              arguments,
               Interceptor_WithConstructor.doSomeWorkMultipleAndThrowsAnnotationsCache$) {
             @Override
             protected void noReturnProceed() throws Throwable {
