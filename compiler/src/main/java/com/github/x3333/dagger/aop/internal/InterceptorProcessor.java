@@ -32,7 +32,7 @@ import com.google.common.collect.Sets;
 @AutoService(Processor.class)
 public class InterceptorProcessor extends BasicAnnotationProcessor {
 
-  protected static String OPTION_GENERATE_DAGGER_MODULE = "aop.generate.module";
+  protected static String OPTION_DISABLE_DAGGER_MODULE = "aop.disable.module.generation";
   protected static String OPTION_DAGGER_MODULE_PACKAGE = "aop.module.package";
 
   @Override
@@ -42,15 +42,15 @@ public class InterceptorProcessor extends BasicAnnotationProcessor {
 
   @Override
   public Set<String> getSupportedOptions() {
-    return Sets.newHashSet(OPTION_GENERATE_DAGGER_MODULE, OPTION_DAGGER_MODULE_PACKAGE);
+    return Sets.newHashSet(OPTION_DISABLE_DAGGER_MODULE, OPTION_DAGGER_MODULE_PACKAGE);
   }
 
   @Override
   protected Iterable<? extends ProcessingStep> initSteps() {
-    final Optional<Boolean> generateModule = getBooleanOption(OPTION_GENERATE_DAGGER_MODULE);
+    final Optional<Boolean> disableModuleGeneration = getBooleanOption(OPTION_DISABLE_DAGGER_MODULE);
     final Optional<String> modulePackage = getOption(OPTION_DAGGER_MODULE_PACKAGE);
 
-    return Collections.singleton(new InterceptorProcessorStep(processingEnv, generateModule, modulePackage));
+    return Collections.singleton(new InterceptorProcessorStep(processingEnv, disableModuleGeneration, modulePackage));
   }
 
   protected Optional<String> getOption(final String option) {

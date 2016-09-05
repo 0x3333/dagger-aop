@@ -81,7 +81,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
   private static final String PACKAGE = MethodInterceptor.class.getPackage().getName();
 
   private final ProcessingEnvironment processingEnv;
-  private final Optional<Boolean> generateModule;
+  private final Optional<Boolean> disableModuleGeneration;
   private final Optional<String> modulePackage;
   private final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services;
   private final InterceptorGenerator generator;
@@ -95,10 +95,10 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * @param generateModule If we should generate a Dagger Module for intercepted methods.
    * @param modulePackage If we should generate a Dagger Module, in which package it should be created.
    */
-  public InterceptorProcessorStep(final ProcessingEnvironment processingEnv, final Optional<Boolean> generateModule,
-      final Optional<String> modulePackage) {
+  public InterceptorProcessorStep(final ProcessingEnvironment processingEnv,
+      final Optional<Boolean> disableModuleGeneration, final Optional<String> modulePackage) {
     this.processingEnv = processingEnv;
-    this.generateModule = generateModule;
+    this.disableModuleGeneration = disableModuleGeneration;
     this.modulePackage = modulePackage;
     final ServiceLoader<InterceptorHandler> handlers =
         ServiceLoader.load(InterceptorHandler.class, this.getClass().getClassLoader());
@@ -167,7 +167,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
       generatedTypes.put(generatedType, element);
     }
 
-    if (generateModule.isPresent() && generateModule.get()) {
+    if (!disableModuleGeneration.isPresent() || !disableModuleGeneration.get()) {
       // Generate Dagger Module for intercepted Classes
       generateInterceptorModule(generatedTypes);
     }
