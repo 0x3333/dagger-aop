@@ -27,7 +27,7 @@ import static javax.lang.model.type.TypeKind.VOID;
 import com.github.x3333.dagger.aop.AbstractMethodInvocation;
 import com.github.x3333.dagger.aop.InterceptorHandler;
 import com.github.x3333.dagger.aop.MethodInterceptor;
-import com.github.x3333.dagger.aop.SourceGenerator;
+import com.github.x3333.dagger.aop.Sources;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -94,7 +94,7 @@ class InterceptorGenerator {
 
         .superclass(ClassName.get(superClassElement)) //
 
-        .addAnnotation(SourceGenerator.generatedAnnotation(InterceptorProcessor.class)) //
+        .addAnnotation(Sources.generatedAnnotation(InterceptorProcessor.class)) //
         .addAnnotations(toSpec(superClassElement.getAnnotationMirrors())) //
 
         .addModifiers(PUBLIC, FINAL);

@@ -24,7 +24,7 @@ import static javax.lang.model.element.Modifier.STATIC;
 
 import com.github.x3333.dagger.aop.InterceptorHandler;
 import com.github.x3333.dagger.aop.MethodInterceptor;
-import com.github.x3333.dagger.aop.SourceGenerator;
+import com.github.x3333.dagger.aop.Sources;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -363,7 +363,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     }
 
     if (count > 0) {
-      SourceGenerator.writeClass(//
+      Sources.writeClass(//
           processingEnv, //
           pkg.getQualifiedName().toString(), //
           classBuilder.build());

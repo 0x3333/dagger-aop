@@ -30,9 +30,9 @@ import com.squareup.javapoet.TypeSpec;
  * 
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
-public final class SourceGenerator {
+public final class Sources {
 
-  private SourceGenerator() {}
+  private Sources() {}
 
   /**
    * Generate the {@link Generated} annotation.
