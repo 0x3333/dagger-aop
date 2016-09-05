@@ -48,13 +48,15 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>dagger-aop-compiler</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
+            <optional>true</optional>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.dagger</groupId>
             <artifactId>dagger-compiler</artifactId>
             <version>${dagger.version}</version>
-            <scope>provided</scope>
+            <optional>true</optional>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -69,8 +71,6 @@
                         <arg>-Aaop.disable.module.generation=false</arg>
                     </compilerArgs>
                 </configuration>
-                <dependencies>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -3,6 +3,7 @@ package test;
 import com.github.x3333.dagger.aop.AbstractMethodInvocation;
 import com.github.x3333.dagger.aop.test.Interceptor;
 import com.github.x3333.dagger.aop.test.Interceptor2;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -23,6 +24,10 @@ public final class Interceptor_WithoutConstructor extends WithoutConstructor {
 
   private static final List<Annotation> doSomeWorkReturnAnnotationsCache$;
 
+  private static final Method doSomeWorkReturnPrimitiveCache$;
+
+  private static final List<Annotation> doSomeWorkReturnPrimitiveAnnotationsCache$;
+
   private static final Method doSomeWorkNoReturnCache$;
 
   private static final List<Annotation> doSomeWorkNoReturnAnnotationsCache$;
@@ -39,6 +44,8 @@ public final class Interceptor_WithoutConstructor extends WithoutConstructor {
     try {
       doSomeWorkReturnCache$ = Interceptor_WithoutConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkReturn");
       doSomeWorkReturnAnnotationsCache$ = Arrays.asList(doSomeWorkReturnCache$.getAnnotations());
+      doSomeWorkReturnPrimitiveCache$ = Interceptor_WithoutConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkReturnPrimitive", String.class);
+      doSomeWorkReturnPrimitiveAnnotationsCache$ = Arrays.asList(doSomeWorkReturnPrimitiveCache$.getAnnotations());
       doSomeWorkNoReturnCache$ = Interceptor_WithoutConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkNoReturn", String.class);
       doSomeWorkNoReturnAnnotationsCache$ = Arrays.asList(doSomeWorkNoReturnCache$.getAnnotations());
       doSomeWorkNoReturnThrowsCache$ = Interceptor_WithoutConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkNoReturnThrows");
@@ -65,16 +72,39 @@ public final class Interceptor_WithoutConstructor extends WithoutConstructor {
   public String doSomeWorkReturn() {
     final Object[] arguments = new Object[] {  };
     try {
-      return $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
+      return (String) $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
           Interceptor_WithoutConstructor.this,
           Interceptor_WithoutConstructor.doSomeWorkReturnCache$,
           arguments,
           Interceptor_WithoutConstructor.doSomeWorkReturnAnnotationsCache$) {
         @Override
-        public String proceed() throws Throwable {
+        public Object proceed() throws Throwable {
           return Interceptor_WithoutConstructor.super.doSomeWorkReturn();
         }
       });
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public int doSomeWorkReturnPrimitive(String param1) {
+    final Object[] arguments = new Object[] { param1 };
+    try {
+      return (Integer) $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
+          Interceptor_WithoutConstructor.this,
+          Interceptor_WithoutConstructor.doSomeWorkReturnPrimitiveCache$,
+          arguments,
+          Interceptor_WithoutConstructor.doSomeWorkReturnPrimitiveAnnotationsCache$) {
+        @Override
+        public Object proceed() throws Throwable {
+          return Interceptor_WithoutConstructor.super.doSomeWorkReturnPrimitive(param1);
+        }
+      });
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);
     }
@@ -94,6 +124,8 @@ public final class Interceptor_WithoutConstructor extends WithoutConstructor {
           Interceptor_WithoutConstructor.super.doSomeWorkNoReturn(param1);
         }
       });
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);
     }
@@ -114,6 +146,8 @@ public final class Interceptor_WithoutConstructor extends WithoutConstructor {
         }
       });
     } catch (WithoutConstructor.MyException e) {
+      throw e;
+    } catch (RuntimeException e) {
       throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);
@@ -144,6 +178,8 @@ public final class Interceptor_WithoutConstructor extends WithoutConstructor {
         }
       });
     } catch (WithoutConstructor.MyException e) {
+      throw e;
+    } catch (RuntimeException e) {
       throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);

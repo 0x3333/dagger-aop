@@ -11,15 +11,20 @@ public abstract class WithConstructor {
   }
 
   public WithConstructor(@Named("myDepAnnotation") final String someDep) {}
-  
+
   @ValidAnnotation
   public String doSomeWorkReturn(String param1) {
     return null;
   }
 
   @ValidAnnotation
+  public int doSomeWorkReturnPrimitive(String param1) {
+    return 0;
+  }
+
+  @ValidAnnotation
   public void doSomeWorkNoReturn() {}
-  
+
   @ValidAnnotation
   public void doSomeWorkNoReturnThrows() throws MyException {}
 

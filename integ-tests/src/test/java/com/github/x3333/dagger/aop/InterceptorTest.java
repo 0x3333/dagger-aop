@@ -50,11 +50,27 @@ public class InterceptorTest {
   }
 
   @Test
-  public void testInterception() {
-    // some.doWork() return "doWork" by default.
+  public void testInterceptionWithReturn() {
+    // some.doWork1() returns "doWork1" by default.
     // when intercepted the result is prefixed with "TestInterceptor_"
-    Truth.assertThat(some.doWork()).isEqualTo("TestInterceptor_doWork");
-    verify(some, times(1)).doWork();
+    Truth.assertThat(some.doWork1()).isEqualTo("TestInterceptor_doWork1");
+    verify(some, times(1)).doWork1();
+  }
+
+  @Test
+  public void testInterceptionWithReturnPrimitive() {
+    // some.doWork2() return 2 by default.
+    // when intercepted the result is added 2
+    Truth.assertThat(some.doWork2()).isEqualTo(4);
+    verify(some, times(1)).doWork2();
+  }
+
+  @Test
+  public void testInterceptionWithReturnAndParamPrimitive() {
+    // some.doWork3() return the parameter as int by default.
+    // when intercepted the result is added 2
+    Truth.assertThat(some.doWork3(8.1d)).isEqualTo(10);
+    verify(some, times(1)).doWork3(8.1d);
   }
 
 }

@@ -137,7 +137,6 @@ class InterceptorGenerator {
       final Iterable<String> parameterNames = simpleNames(methodElement.getParameters());
       final String joinedParameterNames = Joiner.on(", ").join(parameterNames);
       // proceedMethod
-      final TypeName returnTypeName = TypeName.get(returnType);
       final String proceedMethodModifier = hasReturnValue ? "public" : "protected";
       final String proceedMethodName = hasReturnValue ? "proceed" : "noReturnProceed";
       // interceptorInvoke
@@ -174,9 +173,9 @@ class InterceptorGenerator {
         }
 
         final CodeBlock invokeMethod =
-            createInvokeMethod(proceedMethodModifier, returnTypeName, proceedMethodName, lastInvoke);
-        lastInvoke = createInterceptorInvoke(interceptorInvokePrefix, interceptorFieldName, interceptorName,
-            methodCacheFieldName, annotationsFieldName, invokeMethod);
+            createInvokeMethod(returnType, proceedMethodModifier, proceedMethodName, lastInvoke);
+        lastInvoke = createInterceptorInvoke(returnType, interceptorFieldName, interceptorName, methodCacheFieldName,
+            annotationsFieldName, invokeMethod);
       }
 
       tryBlock.add(lastInvoke).unindent();
@@ -187,7 +186,9 @@ class InterceptorGenerator {
             .addStatement("throw e").unindent();
       }
 
-      tryBlock.add("} catch (Throwable e) {\n").indent()//
+      tryBlock.add("} catch (RuntimeException e) {\n").indent()//
+          .addStatement("throw e").unindent()//
+          .add("} catch (Throwable e) {\n").indent()//
           .addStatement("throw new RuntimeException(e)").unindent()//
           .add("}\n");
 
@@ -257,30 +258,42 @@ class InterceptorGenerator {
   }
 
   private CodeBlock createInvokeMethod(//
+      final TypeMirror returnTypeMirror, //
       final String proceedMethodModifier, //
-      final TypeName returnTypeName, //
       final String proceedMethodName, //
       final CodeBlock proceedCall) {
 
-    return CodeBlock.builder()//
-        .add("@$T\n", Override.class)//
-        .add("$L $T $L() throws $T {\n", proceedMethodModifier, returnTypeName, proceedMethodName, Throwable.class)
-        .indent()//
+    final CodeBlock.Builder block = CodeBlock.builder()//
+        .add("@$T\n", Override.class);
+
+    if (returnTypeMirror.getKind() == VOID) {
+      block.add("$L void $L() throws $T {\n", proceedMethodModifier, proceedMethodName, Throwable.class);
+    } else {
+      block.add("$L $T $L() throws $T {\n", proceedMethodModifier, Object.class, proceedMethodName, Throwable.class);
+    }
+    return block.indent()//
         .add(proceedCall).unindent()//
         .add("}\n")//
         .build();
   }
 
   private static CodeBlock createInterceptorInvoke(//
-      final String prefix, //
+      final TypeMirror returnTypeMirror, //
       final String interceptorFieldName, //
       final String interceptorName, //
       final String methodCacheFieldName, //
       final String annotationsFieldName, //
       final CodeBlock method) {
 
-    return CodeBlock.builder()//
-        .add("$L$L.invoke(new $T(\n", prefix, interceptorFieldName, AbstractMethodInvocation.class).indent().indent()//
+    final CodeBlock.Builder block = CodeBlock.builder();
+    if (returnTypeMirror.getKind() == VOID) {
+      block.add("$L.invoke(new $T(\n", interceptorFieldName, AbstractMethodInvocation.class);
+    } else {
+      final TypeName returnType = TypeName.get(returnTypeMirror).box(); // Box if needed
+      block.add("return ($T) $L.invoke(new $T(\n", returnType, interceptorFieldName, AbstractMethodInvocation.class);
+    }
+    return block.indent() //
+        .indent() //
         .add("$L.this, \n", interceptorName) //
         .add("$L.$L, \n", interceptorName, methodCacheFieldName) //
         .add("arguments, \n") //

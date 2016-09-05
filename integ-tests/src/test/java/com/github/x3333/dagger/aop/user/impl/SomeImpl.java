@@ -23,8 +23,20 @@ public abstract class SomeImpl implements Some {
 
   @Override
   @Interceptor
-  public String doWork() {
-    return "doWork";
+  public String doWork1() {
+    return "doWork1";
+  }
+
+  @Override
+  @Interceptor
+  public int doWork2() {
+    return 2;
+  }
+
+  @Override
+  @Interceptor
+  public int doWork3(final double param) {
+    return Double.valueOf(param).intValue();
   }
 
 }

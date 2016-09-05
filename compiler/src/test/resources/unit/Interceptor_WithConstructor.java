@@ -3,6 +3,7 @@ package test;
 import com.github.x3333.dagger.aop.AbstractMethodInvocation;
 import com.github.x3333.dagger.aop.test.Interceptor;
 import com.github.x3333.dagger.aop.test.Interceptor2;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -24,6 +25,10 @@ public final class Interceptor_WithConstructor extends WithConstructor {
 
   private static final List<Annotation> doSomeWorkReturnAnnotationsCache$;
 
+  private static final Method doSomeWorkReturnPrimitiveCache$;
+
+  private static final List<Annotation> doSomeWorkReturnPrimitiveAnnotationsCache$;
+
   private static final Method doSomeWorkNoReturnCache$;
 
   private static final List<Annotation> doSomeWorkNoReturnAnnotationsCache$;
@@ -40,6 +45,8 @@ public final class Interceptor_WithConstructor extends WithConstructor {
     try {
       doSomeWorkReturnCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkReturn", String.class);
       doSomeWorkReturnAnnotationsCache$ = Arrays.asList(doSomeWorkReturnCache$.getAnnotations());
+      doSomeWorkReturnPrimitiveCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkReturnPrimitive", String.class);
+      doSomeWorkReturnPrimitiveAnnotationsCache$ = Arrays.asList(doSomeWorkReturnPrimitiveCache$.getAnnotations());
       doSomeWorkNoReturnCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkNoReturn");
       doSomeWorkNoReturnAnnotationsCache$ = Arrays.asList(doSomeWorkNoReturnCache$.getAnnotations());
       doSomeWorkNoReturnThrowsCache$ = Interceptor_WithConstructor.class.getSuperclass().getDeclaredMethod("doSomeWorkNoReturnThrows");
@@ -66,16 +73,39 @@ public final class Interceptor_WithConstructor extends WithConstructor {
   public String doSomeWorkReturn(String param1) {
     final Object[] arguments = new Object[] { param1 };
     try {
-      return $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
+      return (String) $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
           Interceptor_WithConstructor.this,
           Interceptor_WithConstructor.doSomeWorkReturnCache$,
           arguments,
           Interceptor_WithConstructor.doSomeWorkReturnAnnotationsCache$) {
         @Override
-        public String proceed() throws Throwable {
+        public Object proceed() throws Throwable {
           return Interceptor_WithConstructor.super.doSomeWorkReturn(param1);
         }
       });
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public int doSomeWorkReturnPrimitive(String param1) {
+    final Object[] arguments = new Object[] { param1 };
+    try {
+      return (Integer) $interceptorValidAnnotation.invoke(new AbstractMethodInvocation(
+          Interceptor_WithConstructor.this,
+          Interceptor_WithConstructor.doSomeWorkReturnPrimitiveCache$,
+          arguments,
+          Interceptor_WithConstructor.doSomeWorkReturnPrimitiveAnnotationsCache$) {
+        @Override
+        public Object proceed() throws Throwable {
+          return Interceptor_WithConstructor.super.doSomeWorkReturnPrimitive(param1);
+        }
+      });
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);
     }
@@ -95,6 +125,8 @@ public final class Interceptor_WithConstructor extends WithConstructor {
           Interceptor_WithConstructor.super.doSomeWorkNoReturn();
         }
       });
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);
     }
@@ -115,6 +147,8 @@ public final class Interceptor_WithConstructor extends WithConstructor {
         }
       });
     } catch (WithConstructor.MyException e) {
+      throw e;
+    } catch (RuntimeException e) {
       throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);
@@ -145,6 +179,8 @@ public final class Interceptor_WithConstructor extends WithConstructor {
         }
       });
     } catch (WithConstructor.MyException e) {
+      throw e;
+    } catch (RuntimeException e) {
       throw e;
     } catch (Throwable e) {
       throw new RuntimeException(e);

@@ -14,6 +14,11 @@ public abstract class WithoutConstructor {
   }
 
   @ValidAnnotation
+  public int doSomeWorkReturnPrimitive(String param1) {
+    return 0;
+  }
+
+  @ValidAnnotation
   public void doSomeWorkNoReturn(String param1) {}
 
   @ValidAnnotation

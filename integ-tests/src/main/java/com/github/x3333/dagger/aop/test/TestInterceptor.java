@@ -32,6 +32,8 @@ public class TestInterceptor implements MethodInterceptor {
     final Object returnValue = invocation.proceed();
     if (returnValue instanceof String) {
       return (T) ("TestInterceptor_" + returnValue.toString());
+    } else if (returnValue instanceof Integer) {
+      return (T) (Integer) ((Integer) returnValue + 2);
     }
     return (T) returnValue;
   }

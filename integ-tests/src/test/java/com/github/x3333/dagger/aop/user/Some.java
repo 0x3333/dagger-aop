@@ -18,6 +18,10 @@ package com.github.x3333.dagger.aop.user;
  */
 public interface Some {
 
-  String doWork();
+  String doWork1();
+
+  int doWork2();
+
+  int doWork3(double param);
 
 }
