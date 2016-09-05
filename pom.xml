@@ -137,7 +137,7 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!-- JDT Compiler -->
+                <!-- Compiler -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -145,46 +145,7 @@
                     <configuration>
                         <source>1.8</source>
                         <target>1.8</target>
-                        <compilerId>eclipse</compilerId>
-                        <compilerArgument>-proc:none</compilerArgument>
                     </configuration>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.codehaus.plexus</groupId>
-                            <artifactId>plexus-compiler-eclipse</artifactId>
-                            <version>2.7</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-
-                <!-- Annotation Processor -->
-                <plugin>
-                    <groupId>org.bsc.maven</groupId>
-                    <artifactId>maven-processor-plugin</artifactId>
-                    <version>3.1.0</version>
-                    <executions>
-                        <execution>
-                            <id>process</id>
-                            <goals>
-                                <goal>process</goal>
-                            </goals>
-                            <phase>generate-sources</phase>
-                        </execution>
-                        <execution>
-                            <id>process-test</id>
-                            <goals>
-                                <goal>process-test</goal>
-                            </goals>
-                            <phase>generate-test-sources</phase>
-                        </execution>
-                    </executions>
-                    <dependencies>
-                        <dependency>
-                            <groupId>com.google.dagger</groupId>
-                            <artifactId>dagger-compiler</artifactId>
-                            <version>${dagger.version}</version>
-                        </dependency>
-                    </dependencies>
                 </plugin>
 
                 <!-- Checkstyle -->
@@ -211,9 +172,9 @@
                     </configuration>
                     <dependencies>
                         <dependency>
-                          <groupId>com.github.0x3333.build</groupId>
-                          <artifactId>build-tools</artifactId>
-                          <version>1.0-SNAPSHOT</version>
+                            <groupId>com.github.0x3333.build</groupId>
+                            <artifactId>build-tools</artifactId>
+                            <version>1.0-SNAPSHOT</version>
                         </dependency>
                     </dependencies>
                 </plugin>
