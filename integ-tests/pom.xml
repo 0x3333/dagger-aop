@@ -64,7 +64,7 @@
                         <phase>generate-test-sources</phase>
                         <configuration>
                             <options>
-                                <aop.generate.module>true</aop.generate.module>
+                                <aop.disable.module.generation>false</aop.disable.module.generation>
                             </options>
                         </configuration>
                     </execution>

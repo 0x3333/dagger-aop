@@ -17,7 +17,6 @@
     <url>http://github.com/0x3333/dagger-aop</url>
 
     <modules>
-        <module>tools</module>
         <module>core</module>
         <module>compiler</module>
         <module>integ-tests</module>
@@ -206,15 +205,15 @@
                         <consoleOutput>true</consoleOutput>
                         <failsOnError>true</failsOnError>
                         <linkXRef>false</linkXRef>
-                        <configLocation>dagger-aop-checkstyle.xml</configLocation>
+                        <configLocation>0x3333-checkstyle.xml</configLocation>
                         <!-- Only process files in the source directory, ignoring APT generated files -->
                         <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                     </configuration>
                     <dependencies>
                         <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>dagger-aop-tools</artifactId>
-                            <version>${project.version}</version>
+                          <groupId>com.github.0x3333.build</groupId>
+                          <artifactId>build-tools</artifactId>
+                          <version>1.0-SNAPSHOT</version>
                         </dependency>
                     </dependencies>
                 </plugin>
