@@ -21,7 +21,7 @@ package com.github.x3333.dagger.aop;
 public interface MethodInterceptor {
 
   /**
-   * Called by the generated class. Responsable to implement the interceptor logic as well to call the original method using
+   * Called by the generated class. Responsible to implement the interceptor logic as well to call the original method using
    * {@link MethodInvocation} invocation parameter.
    * 
    * @param <T> type of the method's return value.

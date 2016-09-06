@@ -337,6 +337,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     final TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className) //
         .addModifiers(PUBLIC, ABSTRACT)//
         .addJavadoc("This class is the default Dagger module for Intercepted Methods.\n")//
+        .addAnnotation(Sources.generatedAnnotation(InterceptorProcessorStep.class)) //
         .addAnnotation(Module.class);
 
     int count = 0;

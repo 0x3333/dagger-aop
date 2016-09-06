@@ -141,6 +141,7 @@ class InterceptorGenerator {
       final String proceedMethodName = hasReturnValue ? "proceed" : "noReturnProceed";
       // interceptorInvoke
       final String interceptorInvokePrefix = hasReturnValue ? "return " : "";
+      // FIXME: We must add Parameters to the name or a number, so overloaded methods doesn't collide.
       final String annotationsFieldName = methodName + ANNOTATIONS_CACHE_SUFIX;
       final String methodCacheFieldName = methodName + METHOD_CACHE_SUFIX;
 
