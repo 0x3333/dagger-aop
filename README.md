@@ -32,7 +32,7 @@ The annotation is defined by the [`InterceptorHandler.annotation()`](https://git
 You can pass using maven like this:
 
 ```xml
-<build>
+    <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -82,6 +82,7 @@ This is the interceptor itself, it will be responsible to do the logic behind yo
 public class LogInterceptor implements MethodInterceptor {
 
   @Override
+  @SuppressWarnings("unchecked")
   public <T> T invoke(final MethodInvocation invocation) throws Throwable {
     Logger logger = LoggerFactory.getLogger(invocation.getInstance().getClass());
     
@@ -122,7 +123,7 @@ public class LogInterceptorHandler implements InterceptorHandler {
 
   @Override
   public String validateMethod(final ExecutableElement methodElement) {
-    if(!element.getSimpleName().toString().startsWith("log")) {
+    if(!methodElement.getSimpleName().toString().startsWith("log")) {
       return "Log methods must start with 'log'!";
     }
     return null;
@@ -144,12 +145,12 @@ Suppose you have a Interface and an Implementation of this interface. You would 
 
 ```java
 public interface MyInterface {
-  void doSomething();
+  void logDoSomething();
 }
 ```
 
 ```java
-public class MyClass implements MyInterface {
+public abstract class MyClass implements MyInterface {
 
   private final SomeDependency some;
 
@@ -158,7 +159,7 @@ public class MyClass implements MyInterface {
   }
 
   @Override
-  public void doSomething() {
+  public void logDoSomething() {
     some.doWork();
   }
 
@@ -178,7 +179,7 @@ public abstract class MyModule {
 Well, if we annotate the method like this:
 
 ```java
-public class MyClass implements MyInterface {
+public abstract class MyClass implements MyInterface {
 
   private final SomeDependency some;
 
@@ -186,16 +187,16 @@ public class MyClass implements MyInterface {
     this.some = some;  
   }
 
-  @Log // !!! HERE !!!
+  @Log("My Log Prefix") // !!! HERE !!!
   @Override
-  public void doSomething() {
+  public void logDoSomething() {
     some.doWork();
   }
 
 }
 ```
 
-We need to add 2 binds, one to the Interceptor and another to the newly created class, like this:
+We need to add the `InterceptorModule` as includes in your module and bind the interceptor class, like this:
 
 ```java
 @Module(includes = { InterceptorModule.class }) // Just add InterceptorModule in includes
@@ -203,13 +204,14 @@ public abstract class MyModule {
   @Binds
   abstract MyInterface providesMyInterface(MyClass impl);
 
-  @Binds
-  abstract MyClass providesMyClass(Interceptor_MyClass impl); // New generated class
-
-  @Binds
-  abstract LogInterceptor providesLogInterceptor(LogInterceptor impl); // Interceptor
+  @Provides
+  static LogInterceptor providesLogInterceptor() {
+    return new LogInterceptor();
+  }
 }
 ```
+
+The `InterceptorModule` is a module that is generated with binds to all generated classes.
 
 ## Other examples
 
