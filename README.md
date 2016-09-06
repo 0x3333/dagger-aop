@@ -56,7 +56,7 @@ To create a Method Interceptor, you must have 3 things:
 2. MethodInterceptor
 3. InterceptorHandler
 
-This example can be found in `example` folder.
+This example can be found in [`dagger-aop-logger` project](https://github.com/0x3333/dagger-aop-logger)
 
 ### Annotation
 
