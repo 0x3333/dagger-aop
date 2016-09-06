@@ -1,94 +1,229 @@
 # Dagger2 AOP
 
-### ***This is a work in progress. API is not defined yet.*** ###
+### ***This is a work in progress. API may change***
 
-Usage
------
+Lightweight AOP library, based on the Dagger 2 concept of static code generation and compile-time validation using Annotation Processing Tool (APT).
 
-***dagger-aop*** is a lightweight AOP implementation based on the concept of static code generation and compile-time method interceptor using Annotation Processing Tool (APT).
+## What is it?
 
-By itself, it has no method interceptors, but it is fully extensible using Java Service Handlers by implementing a simple interface.
+***dagger-aop*** is a library that generates a subclass of classes with annotated methods.
 
-Basically, it creates a subclass of the intercepted class, with the target methods replaced by a custom code, which will call the `MethodInterceptor`. It can be nested, allowing multiple interceptions in a single method. *** Curently the order is undetermined, I'll work on this later.***
+It should not be used directly by the end user, it has no method interceptors, it is a foundation to create method interceptors.
 
-Your `InterceptorHandler` can generate classes or do some work after the processor has run. An example can be found [here](https://github.com/0x3333/dagger-jpa/blob/master/src/main/java/com/github/x3333/dagger/jpa/TransactionalInterceptorHandler.java#L134).
+We use Java Service(Registered using [`InterceptorHandler`](https://github.com/0x3333/dagger-aop/blob/master/core/src/main/java/com/github/x3333/dagger/aop/InterceptorHandler.java)) to locate method interceptors.
 
-This library has been created with a simple intent in mind, allow Dagger 2 based projects intercept methods to make them transactional. After some experiments, I generalized the code allowing to create other interceptors. If you believe it should do something else, fell free to create an issue.
+This library has been created with a simple intent in mind, allow Dagger 2 based projects intercept methods to make them transactional(JPA). After some experiments, I generalized the code enabling it to create other interceptors. If you believe it should do something else, fell free to create an issue.
 
-Example
--------
+## How it works?
 
-### Another more complex example implementation can be found here: [dagger-jpa](https://github.com/0x3333/dagger-jpa/).
+***dagger-aop*** generates a subclass of classes with annotated methods. This subclass override the annotated method and call the [`MethodInterceptor`](https://github.com/0x3333/dagger-aop/blob/master/core/src/main/java/com/github/x3333/dagger/aop/MethodInterceptor.java) code.
 
-Imagine that you want to log some information everytime a method is called. You could just add the logger call to the method, like:
+Multiple interceptors in a single method are supported. ***Curently the order of interceptors is undetermined***
 
-```java
-public abstract class SomeClass {
+Also, ***dagger-aop*** will generate a Dagger 2 module that will be used to bind your intercepted method.
 
-  public void doSomeWork() {
-    logger.debug("doSomeWork has been called!");
-  }
+The annotation is defined by the [`InterceptorHandler.annotation()`](https://github.com/0x3333/dagger-aop/blob/master/core/src/main/java/com/github/x3333/dagger/aop/InterceptorHandler.java#L44) method.
 
-}
+## Options
+
+* `aop.disable.module.generation` - `boolean` - Disable Dagger 2 module generation.
+* `aop.module.package` - `boolean` - Define the package in which the Dagger 2 module will be generated.
+* 
+You can pass using maven like this:
+
+```xml
+<build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArgs>
+                        <!-- This is how to pass arguments to Dagger AOP Compiler -->
+                        <arg>-Aaop.disable.module.generation=false</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 ```
 
-Well, imagine that you have to do this for several methods. It is verbose and cumbersome. So, we can create an `MethodInterceptor` that will do this based on a single annotation.
+## Creating Interceptors
 
-This is your class that will be intercepted.
+To create a Method Interceptor, you must have 3 things:
 
-```java
-public abstract class SomeClass {
+1. Annotation
+2. MethodInterceptor
+3. InterceptorHandler
 
-  @Log
-  public void doSomeWork() {
-    // doSomeWork implementation
-  }
+This example can be found in `example` folder.
 
-}
-```
+### Annotation
 
-The Annotation that will be used to mark methods for the interception. Remember to set Retention to `RUNTIME`, interceptors need this annotation on runtime. A annotation can contain values which the interceptor needs in runtime.
+This is the annotation that your interceptor is binded to. Methods annotated with your annotation will be intercepted.
+
+Your annotation can contain elements, that will be available to the interceptor itself in runtime. ***Annotations must have `@Retention(RUNTIME)` and `@Target(METHOD)`, otherwise they will not be registered!***
+
+
 ```java
 @Documented
 @Retention(RUNTIME)
 @Target(METHOD)
-public @interface Log { }
+public @interface Log {
+  String value();
+}
 ```
 
-The MethodInterceptor implementation itself, this is that do the "hard" work.
+### MethodInterceptor
+
+This is the interceptor itself, it will be responsible to do the logic behind your interceptor and invoke the original method if needed. It must implement `<T> T invoke(MethodInvocation invocation) throws Throwable`.
+
 ```java
 public class LogInterceptor implements MethodInterceptor {
 
+  @Override
   public <T> T invoke(final MethodInvocation invocation) throws Throwable {
-    LoggerFactory.getLogger(invocation.getInstance().getClass()).debug("Method {} of {} invoked",
-        invocation.getMethod(),
-        invocation.getInstance().getClass().getName() + "@" + Integer.toHexString(invocation.getInstance().hashCode()));
+    Logger logger = LoggerFactory.getLogger(invocation.getInstance().getClass());
+    
+    // Method's Annotation 
+    Log log = invocation.annotation(Log.class);
+    
+    logger.debug("{} - Method {} of {} invoked", 
+      log.value(), // Annotation Value
+      invocation.getMethod(),
+      invocation.getInstance().toString()
+    );
+    
     return (T) invocation.proceed();
   }
 
 }
 ```
 
-Next, the `InterceptorHandler`, which is used by the `InterceptorGenerator` to provide informations about your interception, also do some validations to the target element.
-I highly suggest you to use [Google AutoService](https://github.com/google/auto/tree/master/service), it will generate services file automatically based on the `@AutoService` annotation, which is mandatory, without the service declared, the `InterceptorGenerator` is unable to find your MethodInterceptor.
+### InterceptorHandler
+
+InterceptorHandler binds the `Annotation` with the `MethodInterceptor`. It also can validate the element that is annotated and do some post processing in the intercepted classes.
+
+InterceptorHandler must be registered in [Java Service](https://docs.oracle.com/javase/7/docs/api/java/util/ServiceLoader.html) using `InterceptorHandler` class. We strongly suggest you to use [Google AutoService](https://github.com/google/auto/tree/master/service), it will generate services file automatically based on the `@AutoService` annotation. Without the service declared, ***dagger-aop*** is unable to find your interceptor.
+
 ```java
-@AutoService(InterceptorHandler.class)
+@AutoService(InterceptorHandler.class) // Google AutoService, if done manually, can be ommited
 public class LogInterceptorHandler implements InterceptorHandler {
 
+  @Override
   public Class<? extends Annotation> annotation() {
     return Log.class; // The Annotation
   }
 
+  @Override
   public Class<LogInterceptor> methodInterceptorClass() {
     return LogInterceptor.class; // The MethodInterceptor itself
+  }
+
+  @Override
+  public String validateMethod(final ExecutableElement methodElement) {
+    if(!element.getSimpleName().toString().startsWith("log")) {
+      return "Log methods must start with 'log'!";
+    }
+    return null;
+  }
+
+  @Override
+  public void postProcess(final ProcessingEnvironment processingEnv, final Set<TypeElement> processedClasses) {
+    // You can generate more classes, configuration files, etc.
   }
 
 }
 ```
 
-We are all set! Now, a new class will be generated, Interceptor_SomeClass, this newly created class will create a constructor, or modify a existent one, with its new dependency, LogInterceptor. You have to use this class, bind it in your Dagger Module.
+### Using Interceptors
 
-More documentation later.
+To use the interceptor, besides adding the dependency, you have to annotate the methods you want to intercept and bind in dagger to use the generated class instead the original implementation.
+
+Suppose you have a Interface and an Implementation of this interface. You would do something like this:
+
+```java
+public interface MyInterface {
+  void doSomething();
+}
+```
+
+```java
+public class MyClass implements MyInterface {
+
+  private final SomeDependency some;
+
+  public MyClass(SomeDependency some) {
+    this.some = some;  
+  }
+
+  @Override
+  public void doSomething() {
+    some.doWork();
+  }
+
+}
+```
+
+You will bind `MyInterface` to `MyClass` this in Dagger 2 like:
+
+```java
+@Module
+public abstract class MyModule {
+  @Binds
+  abstract MyInterface providesMyInterface(MyClass impl);
+}
+```
+
+Well, if we annotate the method like this:
+
+```java
+public class MyClass implements MyInterface {
+
+  private final SomeDependency some;
+
+  public MyClass(SomeDependency some) {
+    this.some = some;  
+  }
+
+  @Log // !!! HERE !!!
+  @Override
+  public void doSomething() {
+    some.doWork();
+  }
+
+}
+```
+
+We need to add 2 binds, one to the Interceptor and another to the newly created class, like this:
+
+```java
+@Module(includes = { InterceptorModule.class }) // Just add InterceptorModule in includes
+public abstract class MyModule {
+  @Binds
+  abstract MyInterface providesMyInterface(MyClass impl);
+
+  @Binds
+  abstract MyClass providesMyClass(Interceptor_MyClass impl); // New generated class
+
+  @Binds
+  abstract LogInterceptor providesLogInterceptor(LogInterceptor impl); // Interceptor
+}
+```
+
+## Other examples
+
+As I said, there is a [***dagger-jpa***](https://github.com/0x3333/dagger-jpa) project which uses ***dagger-aop*** to make methods transactional using JPA. This is a better example on how to create an Interceptor.
+
+## Usage
+
+Currently it is not deployed to maven central, so you need to install on your local repo:
+
+```bash
+git clone git@github.com:0x3333/dagger-aop.git
+cd dagger-aop
+mvn clean install
+```
 
 License
 -------
