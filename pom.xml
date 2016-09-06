@@ -179,6 +179,20 @@
                     </dependencies>
                 </plugin>
 
+                <!-- JAR -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.0.2</version>
+                </plugin>
+                
+                <!-- Install -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+
                 <!-- Add sources to JAR -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
