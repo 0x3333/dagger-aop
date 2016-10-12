@@ -55,20 +55,9 @@
     </issueManagement>
 
     <properties>
-        <!-- Compilation -->
         <dagger.version>2.7</dagger.version>
-        <javapoet.version>1.7.0</javapoet.version>
-        <guava.version>19.0</guava.version>
-        <autovalue.version>1.2</autovalue.version>
-        <autocommon.version>0.6</autocommon.version>
-        <autoservice.version>1.0-rc2</autoservice.version>
-
-        <!-- Tests -->
-        <junit.version>4.12</junit.version>
-        <compiletesting.version>0.8</compiletesting.version>
-        <truth.version>0.25</truth.version>
-        <mockitocore.version>1.10.19</mockitocore.version>
     </properties>
+
 
     <dependencyManagement>
         <dependencies>
@@ -81,28 +70,28 @@
             <dependency>
                 <groupId>com.squareup</groupId>
                 <artifactId>javapoet</artifactId>
-                <version>${javapoet.version}</version>
+                <version>1.7.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
+                <version>19.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.auto</groupId>
                 <artifactId>auto-common</artifactId>
-                <version>${autocommon.version}</version>
+                <version>0.6</version>
             </dependency>
             <dependency>
                 <groupId>com.google.auto.value</groupId>
                 <artifactId>auto-value</artifactId>
-                <version>${autovalue.version}</version>
+                <version>1.2</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.auto.service</groupId>
                 <artifactId>auto-service</artifactId>
-                <version>${autoservice.version}</version>
+                <version>1.0-rc2</version>
                 <scope>provided</scope>
             </dependency>
 
@@ -110,25 +99,25 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>${junit.version}</version>
+                <version>4.12</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.truth</groupId>
                 <artifactId>truth</artifactId>
-                <version>${truth.version}</version>
+                <version>0.25</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.testing.compile</groupId>
                 <artifactId>compile-testing</artifactId>
-                <version>${compiletesting.version}</version>
+                <version>0.8</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>${mockitocore.version}</version>
+                <version>1.10.19</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -185,7 +174,7 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.0.2</version>
                 </plugin>
-                
+
                 <!-- Install -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
