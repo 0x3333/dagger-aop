@@ -36,6 +36,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -102,30 +103,30 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     this.modulePackage = modulePackage;
     final ServiceLoader<InterceptorHandler> handlers =
         ServiceLoader.load(InterceptorHandler.class, this.getClass().getClassLoader());
-    services = Maps.uniqueIndex(handlers, InterceptorHandler::annotation);
-    services.forEach((k, v) -> validateAnnotation(v, k));
-    generator = new InterceptorGenerator(services);
+    this.services = Maps.uniqueIndex(handlers, InterceptorHandler::annotation);
+    this.services.forEach((k, v) -> validateAnnotation(v, k));
+    this.generator = new InterceptorGenerator(this.services);
   }
 
   //
 
   @Override
   public Set<? extends Class<? extends Annotation>> annotations() {
-    return services.keySet();
+    return this.services.keySet();
   }
 
   @Override
   public Set<Element> process(final SetMultimap<Class<? extends Annotation>, Element> elementsByAnnotation) {
     // No services registered, maybe a missing dependency?
-    if (services.size() == 0) {
+    if (this.services.size() == 0) {
       printError(null,
           "No InterceptorHandler registered. Did you forgot to add some interceptor in your dependencies?");
       return Collections.emptySet();
     }
 
     final Map<ExecutableElement, MethodBind.Builder> builders = new HashMap<>();
-    for (final Class<? extends Annotation> annotation : services.keySet()) {
-      final InterceptorHandler service = services.get(annotation);
+    for (final Class<? extends Annotation> annotation : this.services.keySet()) {
+      final InterceptorHandler service = this.services.get(annotation);
 
       // Group by Method
       for (final Element element : elementsByAnnotation.get(annotation)) {
@@ -152,9 +153,9 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
     // Group by Class
     // Tree map to order methods in the same order they appear in the source code.
-    final Multimap<TypeElement, MethodBind> classes = TreeMultimap.create(//
-        (o1, o2) -> o1.getSimpleName().toString().compareTo(o2.getSimpleName().toString()), //
-        (o1, o2) -> Integer.compare(o1.getOrder(), o2.getOrder()));
+    final Multimap<TypeElement, MethodBind> classes = TreeMultimap.create(
+        Comparator.comparing(o -> o.getSimpleName().toString()),
+        Comparator.comparingInt(MethodBind::getOrder));
     builders.values().forEach(b -> {
       final MethodBind bind = b.build();
       classes.put(bind.getClassElement(), bind);
@@ -167,16 +168,16 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
       generatedTypes.put(generatedType, element);
     }
 
-    if (!disableModuleGeneration.isPresent() || !disableModuleGeneration.get()) {
+    if (!this.disableModuleGeneration.isPresent() || !this.disableModuleGeneration.get()) {
       // Generate Dagger Module for intercepted Classes
       generateInterceptorModule(generatedTypes);
     }
 
     // PostProcess to Handlers
-    for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : services.entrySet()) {
+    for (final Entry<Class<? extends Annotation>, InterceptorHandler> serviceEntry : this.services.entrySet()) {
       final Multimap<TypeElement, MethodBind> bindings =
           Multimaps.filterEntries(classes, entry -> entry.getValue().getAnnotations().contains(serviceEntry.getKey()));
-      serviceEntry.getValue().postProcess(processingEnv, bindings.keySet());
+      serviceEntry.getValue().postProcess(this.processingEnv, bindings.keySet());
     }
 
     return Collections.emptySet();
@@ -313,17 +314,17 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
     final Element packageElement = scanForElementKind(ElementKind.PACKAGE, superClassElement);
     final String packageName = MoreElements.asPackage(packageElement).getQualifiedName().toString();
 
-    final TypeSpec interceptorClass = generator.generateInterceptor(superClassElement, methodBinds);
+    final TypeSpec interceptorClass = this.generator.generateInterceptor(superClassElement, methodBinds);
 
     try {
-      JavaFile.builder(packageName, interceptorClass).build().writeTo(processingEnv.getFiler());
+      JavaFile.builder(packageName, interceptorClass).build().writeTo(this.processingEnv.getFiler());
     } catch (final IOException ioe) {
       final StringWriter sw = new StringWriter();
-      try (final PrintWriter pw = new PrintWriter(sw);) {
+      try (final PrintWriter pw = new PrintWriter(sw)) {
         pw.println("Error generating source file for type " + interceptorClass.name);
         ioe.printStackTrace(pw);
         pw.close();
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
+        this.processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, sw.toString());
       }
     }
     return interceptorClass;
@@ -331,8 +332,8 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
   private void generateInterceptorModule(final Map<TypeSpec, TypeElement> generatedTypes) {
     final String className = "InterceptorModule";
-    final PackageElement pkg = processingEnv.getElementUtils().getPackageElement(//
-        modulePackage.isPresent() ? modulePackage.get() : PACKAGE);
+    final PackageElement pkg = this.processingEnv.getElementUtils().getPackageElement(//
+        this.modulePackage.isPresent() ? this.modulePackage.get() : PACKAGE);
 
     final TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className) //
         .addModifiers(PUBLIC, ABSTRACT)//
@@ -365,7 +366,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
 
     if (count > 0) {
       Sources.writeClass(//
-          processingEnv, //
+          this.processingEnv, //
           pkg.getQualifiedName().toString(), //
           classBuilder.build());
     }
@@ -398,7 +399,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * @param message Message to be printed.
    */
   private void printError(final Element element, final String message) {
-    processingEnv.getMessager().printMessage(Kind.ERROR, message, element);
+    this.processingEnv.getMessager().printMessage(Kind.ERROR, message, element);
   }
 
   /**
@@ -408,7 +409,7 @@ class InterceptorProcessorStep implements BasicAnnotationProcessor.ProcessingSte
    * @param message Message to be printed.
    */
   private void printWarning(final Element element, final String message) {
-    processingEnv.getMessager().printMessage(Kind.MANDATORY_WARNING, message, element);
+    this.processingEnv.getMessager().printMessage(Kind.MANDATORY_WARNING, message, element);
   }
 
 }

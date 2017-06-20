@@ -62,8 +62,8 @@ import com.squareup.javapoet.TypeSpec;
  */
 class InterceptorGenerator {
 
-  private static final String METHOD_CACHE_SUFIX = "Cache$";
-  private static final String ANNOTATIONS_CACHE_SUFIX = "AnnotationsCache$";
+  private static final String METHOD_CACHE_SUFFIX = "Cache$";
+  private static final String ANNOTATIONS_CACHE_SUFFIX = "AnnotationsCache$";
   private static final String INTERCEPTOR_CLASS_PREFIX = "Interceptor_";
 
   //
@@ -72,7 +72,7 @@ class InterceptorGenerator {
 
   //
 
-  public InterceptorGenerator(final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services) {
+  InterceptorGenerator(final ImmutableMap<Class<? extends Annotation>, InterceptorHandler> services) {
     this.services = services;
   }
 
@@ -142,8 +142,8 @@ class InterceptorGenerator {
       // interceptorInvoke
       final String interceptorInvokePrefix = hasReturnValue ? "return " : "";
       // FIXME: We must add Parameters to the name or a number, so overloaded methods doesn't collide.
-      final String annotationsFieldName = methodName + ANNOTATIONS_CACHE_SUFIX;
-      final String methodCacheFieldName = methodName + METHOD_CACHE_SUFIX;
+      final String annotationsFieldName = methodName + ANNOTATIONS_CACHE_SUFFIX;
+      final String methodCacheFieldName = methodName + METHOD_CACHE_SUFFIX;
 
       // tryBlock
       final CodeBlock.Builder tryBlock = CodeBlock.builder()//
@@ -161,7 +161,7 @@ class InterceptorGenerator {
       // Process Annotations
       for (int i = 0; i < annotations.size(); i++) {
         final Class<? extends Annotation> annotation = annotations.get(i);
-        final InterceptorHandler handler = services.get(annotation);
+        final InterceptorHandler handler = this.services.get(annotation);
         final Class<? extends MethodInterceptor> handlerClass = handler.methodInterceptorClass();
         final String interceptorFieldName = "$interceptor" + annotation.getSimpleName();
 

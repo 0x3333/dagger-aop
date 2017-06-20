@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.processing.Processor;
+import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.SourceVersion;
 
 import com.google.auto.common.BasicAnnotationProcessor;
@@ -30,10 +31,11 @@ import com.google.common.collect.Sets;
  * @author Tercio Gaudencio Filho (terciofilho [at] gmail.com)
  */
 @AutoService(Processor.class)
+@SupportedOptions({InterceptorProcessor.OPTION_DISABLE_DAGGER_MODULE, InterceptorProcessor.OPTION_DAGGER_MODULE_PACKAGE})
 public class InterceptorProcessor extends BasicAnnotationProcessor {
 
-  protected static String OPTION_DISABLE_DAGGER_MODULE = "aop.disable.module.generation";
-  protected static String OPTION_DAGGER_MODULE_PACKAGE = "aop.module.package";
+  protected static final String OPTION_DISABLE_DAGGER_MODULE = "aop.disable.module.generation";
+  protected static final String OPTION_DAGGER_MODULE_PACKAGE = "aop.module.package";
 
   @Override
   public SourceVersion getSupportedSourceVersion() {
@@ -50,17 +52,17 @@ public class InterceptorProcessor extends BasicAnnotationProcessor {
     final Optional<Boolean> disableModuleGeneration = getBooleanOption(OPTION_DISABLE_DAGGER_MODULE);
     final Optional<String> modulePackage = getOption(OPTION_DAGGER_MODULE_PACKAGE);
 
-    return Collections.singleton(new InterceptorProcessorStep(processingEnv, disableModuleGeneration, modulePackage));
+    return Collections.singleton(new InterceptorProcessorStep(this.processingEnv, disableModuleGeneration, modulePackage));
   }
 
   protected Optional<String> getOption(final String option) {
     checkNotNull(option);
-    return Optional.ofNullable(processingEnv.getOptions().get(option));
+    return Optional.ofNullable(this.processingEnv.getOptions().get(option));
   }
 
   protected Optional<Boolean> getBooleanOption(final String option) {
     checkNotNull(option);
-    final String value = processingEnv.getOptions().get(option);
+    final String value = this.processingEnv.getOptions().get(option);
     return Optional.ofNullable(value == null ? null : Boolean.valueOf(value));
   }
 
