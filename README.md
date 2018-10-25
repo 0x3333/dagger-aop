@@ -1,6 +1,6 @@
 # Dagger2 AOP
 
-### ***This is a work in progress. API may change***
+### ***I'm not using Dagger anymore, so it is here for historical reasons.***
 
 Lightweight AOP library, based on the Dagger 2 concept of static code generation and compile-time validation using Annotation Processing Tool (APT).
 
